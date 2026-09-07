@@ -1,79 +1,69 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Annotated, Optional
 
 app = FastAPI()
 
-
-class UserCreate(BaseModel):
-    username: str = Field(..., min_length=2,
-                          max_length=20, description="用户登录名")
-    password: str = Field(..., min_length=6,
-                          max_length=20, description="用户登录密码")
-    email: str = Field(..., description="用户邮箱")
+BookName = Annotated[str,
+                     Field(..., min_length=2, max_length=50, description="书名")]
+PositiveInt = Annotated[int, Field(..., gt=0, description="正整数")]
 
 
-class UserRead(BaseModel):
-    user_id: int = Field(..., description="用户ID")
-    username: str = Field(..., description="用户登录名")
-    email: str = Field(..., description="用户邮箱")
-    password: str = Field(..., exclude=True, description="用户登录密码")
+class BookCreate(BaseModel):
+    title: BookName
+    author: str = Field(..., min_length=2, max_length=30, description="作者")
+    price: float = Field(..., gt=0, description="价格")
+    tags: list[str] | None = Field([], description="标签")
 
 
-class UserUpdate(BaseModel):
-    username: Optional[str] = Field(
-        default=None, min_length=2, max_length=20, description="用户登录名")
-    email: Optional[str] = Field(default=None, description="用户邮箱")
+class BookRead(BaseModel):
+    book_id: PositiveInt
+    title: BookName
+    author: str = Field(..., description="作者")
+    price: float = Field(..., description="价格")
+    tags: list[str] | None = Field([], description="标签")
+    internal_note: str = Field(..., description="内部备注", exclude=True)
 
 
-fake_db = {}
+class BookUpdate(BaseModel):
+    title: str | None = Field(
+        None, min_length=2, max_length=50, description="书名")
+    author: str | None = Field(
+        None, min_length=2, max_length=30, description="作者")
+    price: float | None = Field(None, gt=0, description="价格")
+    tags: list[str] | None = Field(None, description="标签")
 
 
-@app.post("/users/", response_model=UserRead, status_code=201)
-async def create_user(user: UserCreate):
-    if user_id not in fake_db:
-        return {"detail": "用户不存在"}
-    return fake_db[user_id]
+fake_books_db = {}
 
 
-@app.patch("/users/{user_id}", response_model=UserRead)
-async def update_user(user_id: int, user_update: UserUpdate):
-    if user_id not in fake_db:
-        return {"detail": "用户不存在"}
-
-    update_data = user_update.model_dump(exclude_unset=True)
-    fake_db[user_id].update(update_data)
-    return fake_db[user_id]
+@app.post("/books/", response_model=BookRead, status_code=201)
+async def create_book(book: BookCreate):
+    new_id = len(fake_books_db)+1
+    fake_books_db[new_id] = {
+        **book.model_dump(), "book_id": new_id, "internal_note": "系统自动创建"}
+    return fake_books_db[new_id]
 
 
-class ArticleCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=100, description="文章标题")
-    content: str = Field(..., min_length=1, description="文章正文")
+@app.get("/books/{book_id}", response_model=BookRead)
+async def read_book(book_id: int):
+    if book_id not in fake_books_db:
+        raise HTTPException(status_code=404, detail="书籍不存在")
+
+    return fake_books_db[book_id]
 
 
-class ArticleRead(BaseModel):
-    article_id: int = Field(..., description="文章唯一ID")
-    title: str = Field(..., description="文章标题")
-    content: str = Field(..., description="文章正文")
-    author: str = Field(..., description="文章作者")
+@app.get("/books/", response_model=list[BookRead])
+async def read_books():
+    return list(fake_books_db.values())
 
 
-class ArticleUpdate(BaseModel):
-    title: Optional[str] = Field(
-        default=None, min_length=1, max_length=100, description="新的文章标题")
-    content: Optional[str] = Field(
-        default=None, min_length=1, description="新的文章正文")
+@app.patch("/books/{book_id}", response_model=BookRead)
+async def update_book(book_id: int, book_update: BookUpdate):
+    if book_id not in fake_books_db:
+        raise HTTPException(status_code=404, detail="书籍不存在")
 
-fake_articles_db = {
-    1: {"article_id": 1, "title": "初学FastAPI", "content": "这是正文...", "author": "Cloudy"}
-}
+    update_data = book_update.model_dump(exclude_unset=True)
+    fake_books_db[book_id].update(update_data)
 
-@app.patch("/articles/{article_id}", response_model=ArticleRead)
-async def update_article(article_id: int, article_update: ArticleUpdate):
-    if article_id not in fake_articles_db:
-        return {"detail": "文章不存在"}
-    
-    update_data = article_update.model_dump(exclude_unset=True)
-    fake_articles_db[article_id].update(update_data)
-    
-    return fake_articles_db[article_id]
+    return fake_books_db[book_id]
