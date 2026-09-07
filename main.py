@@ -30,3 +30,28 @@ Python 基础提示：在 Python 中，表示一个包含多个对象的列表�
 遇到任何报错或卡壳，随时问我！
 写完后，直接把完整的 main.py 代码发给我，我来给你做专业的 Code Review。"""
 
+
+class Student(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50, description="学生姓名")
+    age: int = Field(..., gt=0, description="学生年龄，必须大于0")
+
+
+class ClassroomCreate(BaseModel):
+    class_name: str = Field(..., min_length=1,
+                            max_length=50, description="班级名称")
+    students: list[Student] = Field(..., description="学生列表")
+
+
+fake_classrooms_db = {}  # 模拟数据库，用于存储班级信息
+
+
+@app.post("/classrooms/", tags=["班级管理"], summary="创建班级", status_code=status.HTTP_201_CREATED)
+async def create_classroom(classroom: ClassroomCreate):
+    if len(classroom.students) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="班级必须至少有一名学生")
+    new_id = max(fake_classrooms_db.keys())+1 if fake_classrooms_db else 1
+    new_classroom = {
+        "id": new_id, "class_name": classroom.class_name, "students": classroom.students}
+    fake_classrooms_db[new_id] = new_classroom
+    return {"id": new_id, "class_name": classroom.class_name, "student_count": len(classroom.students)}
