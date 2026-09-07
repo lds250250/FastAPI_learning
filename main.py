@@ -1,27 +1,23 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field, ConfigDict
-
-app = FastAPI()
+from pydantic import BaseModel, field_validator, model_validator
 
 
-class Student(BaseModel):
-    model_config = ConfigDict(extra="forbid",               # 严禁传入未定义的多余字段
-                              str_strip_whitespace=True     # 自动去除字符串首尾的空格
-                              )
+class User(BaseModel):
+    username: str
 
-    name:str=Field(
-        ...,
-        min_length=2,
-        max_length=20,
-        description="学生姓名"
-    )
-    age:int = Field(
-        ...,
-        gt=0,
-        le=150,
-        description="学生年龄"
-    )
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        if not v.islower():
+            raise ValueError('用户名必须全小写')
+        return v
 
-@app.post("/student")
-async def create_student(student: Student):
-    return student.model_dump()
+
+class Course(BaseModel):
+    start_date: int
+    end_date: int
+
+    @model_validator(mode='after')
+    def check_dates(self):
+        if self.end_date < self.start_date:
+            raise ValueError('结束日期不能早于开始日期')
+        return self
