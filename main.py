@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, EmailStr
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends, status
+from typing import Annotated
 
 app = FastAPI()
 
@@ -27,6 +28,15 @@ class UserRead(BaseModel):
 fake_users_db = {}
 
 
+async def get_user_by_username(username: str):
+    if username not in fake_users_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"用户'{username}'不存在"
+        )
+    return fake_users_db[username]
+
+
 @app.post("/users/register/", response_model=UserRead, status_code=201)
 async def register_user(user: UserCreate):
     hashed_password = f'hashed_{user.password}'
@@ -42,7 +52,6 @@ async def register_user(user: UserCreate):
 
 
 @app.get("/users/{username}", response_model=UserRead)
-async def get_user(username: str):
-    if username not in fake_users_db:
-        raise HTTPException(status_code=404, detail="用户不存在")
-    return fake_users_db[username]
+async def get_user(user_data: dict = Depends(get_user_by_username)):
+
+    return user_data
