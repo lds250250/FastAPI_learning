@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, EmailStr
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -16,6 +17,32 @@ class UserCreate(BaseModel):
     profile: UserProfile | None = Field(None, description="个人简介信息")
 
 
-@app.post("/users/register/")
-async def register_user(user: UserCreate)
-return user
+class UserRead(BaseModel):
+    username: str = Field(..., description="用户名")
+    email: EmailStr = Field(..., description="用户邮箱")
+    password: str = Field(..., exclude=True, description="用户密码")
+    profile: UserProfile | None = Field(None, description="个人简介")
+
+
+fake_users_db = {}
+
+
+@app.post("/users/register/", response_model=UserRead, status_code=201)
+async def register_user(user: UserCreate):
+    hashed_password = f'hashed_{user.password}'
+
+    fake_users_db[user.username] = {
+        "username": user.username,
+        "email": user.email,
+        "password": hashed_password,
+        "profile": user.profile.model_dump() if user.profile else None
+    }
+
+    return fake_users_db[user.username]
+
+
+@app.get("/users/{username}", response_model=UserRead)
+async def get_user(username: str):
+    if username not in fake_users_db:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return fake_users_db[username]
