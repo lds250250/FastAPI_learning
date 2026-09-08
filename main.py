@@ -18,11 +18,20 @@ class UserCreate(BaseModel):
     profile: UserProfile | None = Field(None, description="个人简介信息")
 
 
-class UserRead(BaseModel):
-    username: str = Field(..., description="用户名")
+class UserResponse(BaseModel):
+    username: str = Field(..., min_length=3, max_length=20, description="用户名")
     email: EmailStr = Field(..., description="用户邮箱")
-    password: str = Field(..., exclude=True, description="用户密码")
-    profile: UserProfile | None = Field(None, description="个人简介")
+    profile: UserProfile | None = Field(None, description="个人简介信息")
+
+
+class UserUpdate(BaseModel):
+    email: EmailStr | None = Field(None, description="用户邮箱")
+    profile: UserProfile | None = Field(None, description="个人简介信息")
+
+
+class PasswordUpdate(BaseModel):
+    old_password: str = Field(..., min_length=8, description="用户密码")
+    new_password: str = Field(..., min_length=8, description="用户密码")
 
 
 fake_users_db = {}
@@ -37,7 +46,7 @@ async def get_user_by_username(username: str):
     return fake_users_db[username]
 
 
-@app.post("/users/register/", response_model=UserRead, status_code=201)
+@app.post("/users/register/", response_model=UserResponse, status_code=201)
 async def register_user(user: UserCreate):
     hashed_password = f'hashed_{user.password}'
 
@@ -51,7 +60,36 @@ async def register_user(user: UserCreate):
     return fake_users_db[user.username]
 
 
-@app.get("/users/{username}", response_model=UserRead)
+@app.get("/users/{username}", response_model=UserResponse)
 async def get_user(user_data: dict = Depends(get_user_by_username)):
 
     return user_data
+
+
+@app.get("/users/", response_model=list[UserResponse])
+async def get_users():
+    return list(fake_users_db.values())
+
+
+@app.put("/users/{username}/password", status_code=204)
+async def password_update(password_data: PasswordUpdate, user_data: dict = Depends(get_user_by_username)):
+
+    hashed_oldpassword = f'hashed_{password_data.old_password}'
+    if user_data["password"] != hashed_oldpassword:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    hashed_newpassword = f'hashed_{password_data.new_password}'
+    user_data["password"] = hashed_newpassword
+
+
+@app.patch("/users/{username}", response_model=UserResponse)
+async def user_update(user_update: UserUpdate, user_data: dict = Depends(get_user_by_username)):
+    update_data = user_update.model_dump(exclude_unset=True)
+    if "email" in update_data:
+        user_data["email"] = update_data["email"]
+    if "profile" in update_data:
+        user_data["profile"] = update_data["profile"]
+
+
+@app.delete("/users/{username}", status_code=204)
+async def user_delete(user_data: dict = Depends(get_user_by_username)):
+    del fake_users_db[user_data["username"]]
