@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
-from my_fastapi_project.models import UserCreate, UserResponse, UserUpdate, PasswordUpdate
-from my_fastapi_project.dependencies import UserDependency, get_user_by_username, fake_users_db
-from fastapi import HTTPException
+from my_fastapi_project.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordUpdate
+from my_fastapi_project.api.deps import UserDependency, get_user_by_username, fake_users_db
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
