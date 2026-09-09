@@ -1,21 +1,22 @@
 from fastapi import APIRouter, HTTPException, status
 from my_fastapi_project.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordUpdate
-from my_fastapi_project.api.deps import UserDependency, get_user_by_username, fake_users_db
-
+from my_fastapi_project.api.deps import UserDependency
+from my_fastapi_project.repositories.user_repo import UserRepository
 
 router = APIRouter(prefix="/users", tags=["users"])
+repo = UserRepository()
 
 
 @router.post("/register/", response_model=UserResponse, status_code=201)
 async def register_user(user: UserCreate):
     hashed_password = f'hashed_{user.password}'
-    fake_users_db[user.username] = {
+    data = {
         "username": user.username,
         "email": user.email,
         "password": hashed_password,
         "profile": user.profile.model_dump() if user.profile else None
     }
-    return fake_users_db[user.username]
+    return repo.create(user.username, data)
 
 
 @router.get("/{username}", response_model=UserResponse)
@@ -25,7 +26,7 @@ async def get_user(user_data: UserDependency):
 
 @router.get("/", response_model=list[UserResponse])
 async def get_users():
-    return list(fake_users_db.values())
+    return repo.list_all()
 
 
 @router.put("/{username}/password", status_code=204)
@@ -44,8 +45,9 @@ async def user_update(user_update: UserUpdate, user_data: UserDependency):
         user_data["email"] = update_data["email"]
     if "profile" in update_data:
         user_data["profile"] = update_data["profile"]
+    return user_data
 
 
 @router.delete("/{username}", status_code=204)
 async def user_delete(user_data: UserDependency):
-    del fake_users_db[user_data["username"]]
+    repo.delete(user_data["username"])
