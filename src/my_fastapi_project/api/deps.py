@@ -2,13 +2,27 @@ from fastapi import HTTPException, status, Depends
 from typing import Annotated
 
 from my_fastapi_project.repositories.user_repo import UserRepository
+from my_fastapi_project.services.user_service import UserService
 
 
-_repo = UserRepository()
+def get_user_repo() -> UserRepository:
+    return UserRepository()
 
 
-async def get_user_by_username(username: str):
-    user = _repo.get(username)
+def get_user_service(
+        repo: Annotated[UserRepository, Depends(get_user_repo)],
+) -> UserService:
+    return UserService(repo)
+
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+
+
+async def get_current_user(
+        username: str,
+        service: UserServiceDep,
+) -> dict:
+    user = service.get_user(username)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -16,4 +30,4 @@ async def get_user_by_username(username: str):
         )
     return user
 
-UserDependency = Annotated[dict, Depends(get_user_by_username)]
+CurrentUserDep = Annotated[dict, Depends(get_current_user)]
