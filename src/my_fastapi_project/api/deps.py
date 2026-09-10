@@ -1,5 +1,4 @@
-from fastapi import HTTPException, status, Depends
-from fastapi import Query
+from fastapi import HTTPException, status, Depends, Query, Header
 from typing import Annotated
 
 from my_fastapi_project.repositories.user_repo import UserRepository
@@ -80,3 +79,16 @@ class Pagination:
 
 
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
+
+
+DEMO_API_KEY = "demo-secret-key"
+
+
+async def verify_api_key(
+        x_api_key: Annotated[str | None, Header()] = None,
+) -> None:
+    if x_api_key != DEMO_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key 无效或缺失",
+        )

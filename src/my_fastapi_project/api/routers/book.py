@@ -1,9 +1,18 @@
-from fastapi import HTTPException, status, APIRouter
+from fastapi import HTTPException, status, APIRouter, Depends
 
 from my_fastapi_project.schemas.book import BookUpdate, BookCreate, BookResponse
-from my_fastapi_project.api.deps import BookServiceDep, CurrentBookDep, PaginationDep
+from my_fastapi_project.api.deps import (
+    BookServiceDep,
+    CurrentBookDep,
+    PaginationDep,
+    verify_api_key,
+)
 
-router = APIRouter(prefix="/books", tags=["books"])
+router = APIRouter(
+    prefix="/books",
+    tags=["books"],
+    dependencies=[Depends(verify_api_key)],
+)
 
 
 @router.post("/", response_model=BookResponse, status_code=201)
