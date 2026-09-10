@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, APIRouter
 
 from my_fastapi_project.schemas.book import BookUpdate, BookCreate, BookResponse
-from my_fastapi_project.api.deps import BookServiceDep, CurrentBookDep
+from my_fastapi_project.api.deps import BookServiceDep, CurrentBookDep, PaginationDep
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -18,8 +18,8 @@ async def register_book(book: BookCreate, service: BookServiceDep):
 
 
 @router.get("/", response_model=list[BookResponse])
-async def get_books(service: BookServiceDep):
-    return service.list_book()
+async def get_books(pagination: PaginationDep, service: BookServiceDep):
+    return service.list_book(pagination.offset, pagination.limit)
 
 
 @router.get("/{isbn}", response_model=BookResponse)

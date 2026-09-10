@@ -14,8 +14,9 @@ class BookService:
         data = book.model_dump()
         return self.repo.create(book.isbn, data)
 
-    def list_book(self) -> list[dict[str, Any]]:
-        return self.repo.list_all()
+    def list_book(self, offset: int, limit: int) -> list[dict[str, Any]]:
+        books = self.repo.list_all()
+        return books[offset: offset + limit]
 
     def get_book(self, isbn: str) -> dict[str, Any] | None:
         return self.repo.get(isbn)

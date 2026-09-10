@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status, Depends
+from fastapi import Query
 from typing import Annotated
 
 from my_fastapi_project.repositories.user_repo import UserRepository
@@ -57,3 +58,25 @@ async def get_current_book(isbn: str, service: BookServiceDep) -> dict:
     return book
 
 CurrentBookDep = Annotated[dict, Depends(get_current_book)]
+
+
+class Pagination:
+
+    def __init__(
+            self,
+            page: int = Query(1, ge=1, description="页码，从 1 开始"),
+            size: int = Query(10, ge=1, le=100, description="每页条数"),
+    ):
+        self.page = page
+        self.size = size
+
+    @property
+    def offset(self) -> int:
+        return (self.page-1)*self.size
+
+    @property
+    def limit(self) -> int:
+        return self.size
+
+
+PaginationDep = Annotated[Pagination, Depends(Pagination)]
