@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+
 from my_fastapi_project.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordUpdate
 from my_fastapi_project.api.deps import UserServiceDep, CurrentUserDep
 

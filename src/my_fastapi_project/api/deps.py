@@ -4,6 +4,9 @@ from typing import Annotated
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.user_service import UserService
 
+from my_fastapi_project.repositories.book_repo import BookRepository
+from my_fastapi_project.services.book_service import BookService
+
 
 def get_user_repo() -> UserRepository:
     return UserRepository()
@@ -31,3 +34,26 @@ async def get_current_user(
     return user
 
 CurrentUserDep = Annotated[dict, Depends(get_current_user)]
+
+
+def get_book_repo() -> BookRepository:
+    return BookRepository()
+
+
+def get_book_service(repo: Annotated[BookRepository, Depends(get_book_repo)]) -> BookService:
+    return BookService(repo)
+
+
+BookServiceDep = Annotated[BookService, Depends(get_book_service)]
+
+
+async def get_current_book(isbn: str, service: BookServiceDep) -> dict:
+    book = service.get_book(isbn)
+    if book is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"图书'{isbn}'不存在"
+        )
+    return book
+
+CurrentBookDep = Annotated[dict, Depends(get_current_book)]

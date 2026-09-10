@@ -45,3 +45,4 @@ class UserService:
 
     def delete_user(self, username: str) -> bool:
         return self.repo.delete(username)
+    
