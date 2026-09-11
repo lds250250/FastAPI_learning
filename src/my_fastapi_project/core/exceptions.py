@@ -32,3 +32,10 @@ class BookAlreadyExists(BusinessError):
 
     def __init__(self, isbn: str):
         super().__init__(f"图书'{isbn}'已存在")
+
+
+class EmailAlreadyExists(BusinessError):
+    status_code = 409
+
+    def __init__(self, email: str):
+        super().__init__(f"邮箱'{email}'已被使用")

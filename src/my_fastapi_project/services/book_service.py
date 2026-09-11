@@ -9,7 +9,7 @@ class BookService:
     def __init__(self, repo: BookRepository):
         self.repo = repo
 
-    def create(self, book: BookCreate) -> dict[str, Any] | None:
+    def create(self, book: BookCreate) -> dict[str, Any]:
         if self.repo.exists(book.isbn):
             raise BookAlreadyExists(book.isbn)
         data = book.model_dump()

@@ -27,3 +27,6 @@ class UserRepository:
 
     def delete(self, username: str) -> bool:
         return _users.pop(username, None) is not None
+
+    def exists_email(self, email: str) -> bool:
+        return any(u["email"] == email for u in _users.values())

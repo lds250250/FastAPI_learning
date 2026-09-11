@@ -1,6 +1,7 @@
 from typing import Any
 
 from my_fastapi_project.core.exceptions import (
+    EmailAlreadyExists,
     InvalidOldPassword,
     UsernameAlreadyExists,
 )
@@ -19,6 +20,8 @@ class UserService:
     def register(self, user: UserCreate) -> dict[str, Any]:
         if self.repo.exists(user.username):
             raise UsernameAlreadyExists(user.username)
+        if self.repo.exists_email(user.email):
+            raise EmailAlreadyExists(user.email)
         data = {
             "username": user.username,
             "email": user.email,

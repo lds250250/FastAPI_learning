@@ -1,4 +1,5 @@
 import time
+import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,10 +28,22 @@ async def log_requests(request: Request, call_next):
 
     elapsed = (time.monotonic() - start) * 1000
     response.headers["X-Process-Time-Ms"] = f"{elapsed:.0f}"
+    rid = getattr(request.state, "request_id", "-")
     print(
-        f"[{request.method}] {request.url.path} "
+        f"[{rid}][{request.method}] {request.url.path} "
         f"→ {response.status_code}  {elapsed:.0f} ms"
     )
+    return response
+
+
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    rid = request.headers.get("x-request-id") or uuid.uuid4().hex
+    request.state.request_id = rid
+
+    response = await call_next(request)
+
+    response.headers["X-Request-ID"] = rid
     return response
 
 
