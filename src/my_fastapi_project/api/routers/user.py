@@ -6,7 +6,6 @@ from my_fastapi_project.api.deps import (
     CurrentUserDep,
     PaginationDep,
     get_caller_role,
-    log_request,
     users_rate_limit,
     register_rate_limit,
     require_role,
@@ -19,7 +18,6 @@ router = APIRouter(
     dependencies=[
         Depends(users_rate_limit),
         Depends(get_caller_role),
-        Depends(log_request)
     ],
 )
 

@@ -14,15 +14,20 @@ settings = get_settings()
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
 
-# ---------- 自定义中间件：给每个响应加耗时头 ----------
-
+# ---------- 请求日志中间件 ----------
 
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
+async def log_requests(request: Request, call_next):
     start = time.monotonic()
+
     response = await call_next(request)
+
     elapsed = (time.monotonic() - start) * 1000
     response.headers["X-Process-Time-Ms"] = f"{elapsed:.0f}"
+    print(
+        f"[{request.method}] {request.url.path} "
+        f"→ {response.status_code}  {elapsed:.0f} ms"
+    )
     return response
 
 

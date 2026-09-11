@@ -160,11 +160,3 @@ def rate_limiter(scope: str, times: int, window: int):
 books_rate_limit = rate_limiter("books", 5, 60)
 users_rate_limit = rate_limiter("users", 10, 60)
 register_rate_limit = rate_limiter("users:register", 3, 60)
-# ---------- 请求耗时日志 ----------
-
-
-async def log_request(request: Request):
-    start = time.monotonic()
-    yield
-    elapsed = (time.monotonic()-start)*1000
-    print(f"[{request.method}]{request.url.path} {elapsed:.0f} ms")
