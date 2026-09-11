@@ -1,5 +1,9 @@
 from typing import Any
 
+from my_fastapi_project.core.exceptions import (
+    InvalidOldPassword,
+    UsernameAlreadyExists,
+)
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.schemas.user import PasswordUpdate, UserCreate, UserUpdate
 
@@ -12,9 +16,9 @@ class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
 
-    def register(self, user: UserCreate) -> dict[str, Any] | None:
+    def register(self, user: UserCreate) -> dict[str, Any]:
         if self.repo.exists(user.username):
-            return None
+            raise UsernameAlreadyExists(user.username)
         data = {
             "username": user.username,
             "email": user.email,
@@ -30,14 +34,11 @@ class UserService:
         users = self.repo.list_all()
         return users[offset : offset + limit]
 
-    def change_password(self, username: str, data: PasswordUpdate) -> bool:
+    def change_password(self, username: str, data: PasswordUpdate) -> None:
         user = self.repo.get(username)
-        if user is None:
-            return False
-        if user["password"] != _hash_password(data.old_password):
-            return False
+        if user is None or user["password"] != _hash_password(data.old_password):
+            raise InvalidOldPassword()
         self.repo.update(username, {"password": _hash_password(data.new_password)})
-        return True
 
     def update_user(self, username: str, data: UserUpdate) -> dict[str, Any] | None:
         payload = data.model_dump(exclude_unset=True)

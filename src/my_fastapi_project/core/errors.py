@@ -3,6 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from my_fastapi_project.core.exceptions import BusinessError
+
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
@@ -37,4 +39,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": "服务器内部错误"},
+        )
+
+    @app.exception_handler(BusinessError)
+    async def business_error_handler(request: Request, exc: BusinessError):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"code": exc.status_code, "message": exc.message},
         )
