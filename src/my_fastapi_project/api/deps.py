@@ -11,6 +11,9 @@ from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.services.book_service import BookService
 
 
+# ---------- USER ----------
+
+
 def get_user_repo() -> UserRepository:
     return UserRepository()
 
@@ -39,6 +42,9 @@ async def get_current_user(
 CurrentUserDep = Annotated[dict, Depends(get_current_user)]
 
 
+# ---------- BOOK ----------
+
+
 def get_book_repo() -> BookRepository:
     return BookRepository()
 
@@ -60,6 +66,9 @@ async def get_current_book(isbn: str, service: BookServiceDep) -> dict:
     return book
 
 CurrentBookDep = Annotated[dict, Depends(get_current_book)]
+
+
+# ---------- 通用 ----------
 
 
 class Pagination:
@@ -121,31 +130,36 @@ def require_role(required: str):
 # ---------- 限流 ----------
 
 
-RATE_LIMIT_TIMES = 5
-RATE_LIMIT_WINDOW = 60
-
 _hits: dict[str, list[float]] = {}
 
 
-async def rate_limit(request: Request) -> None:
-    client = request.client.host if request.client else "unknown"
-    now = time.monotonic()
+def rate_limiter(scope: str, times: int, window: int):
 
-    timestamps = _hits.setdefault(client, [])
+    async def limiter(request: Request) -> None:
+        client = request.client.host if request.client else "unknown"
+        now = time.monotonic()
 
-    cutoff = now-RATE_LIMIT_WINDOW
-    while timestamps and timestamps[0] < cutoff:
-        timestamps.pop(0)
+        key = f"{scope}:{client}"
+        timestamps = _hits.setdefault(key, [])
 
-    if len(timestamps) >= RATE_LIMIT_TIMES:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="请求过于频繁，请稍后再试",
-        )
+        cutoff = now-window
+        while timestamps and timestamps[0] < cutoff:
+            timestamps.pop(0)
 
-    timestamps.append(now)
+        if len(timestamps) >= times:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="请求过于频繁，请稍后再试",
+            )
+
+        timestamps.append(now)
+
+    return limiter
 
 
+books_rate_limit = rate_limiter("books", 5, 60)
+users_rate_limit = rate_limiter("users", 10, 60)
+register_rate_limit = rate_limiter("users:register", 3, 60)
 # ---------- 请求耗时日志 ----------
 
 

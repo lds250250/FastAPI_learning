@@ -26,8 +26,9 @@ class UserService:
     def get_user(self, username: str) -> dict[str, Any] | None:
         return self.repo.get(username)
 
-    def list_users(self) -> list[dict[str, Any]]:
-        return self.repo.list_all()
+    def list_users(self, offset: int, limit: int) -> list[dict[str, Any]]:
+        users = self.repo.list_all()
+        return users[offset: offset + limit]
 
     def change_password(self, username: str, data: PasswordUpdate) -> bool:
         user = self.repo.get(username)
@@ -45,4 +46,3 @@ class UserService:
 
     def delete_user(self, username: str) -> bool:
         return self.repo.delete(username)
-    

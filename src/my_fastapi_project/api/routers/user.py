@@ -1,12 +1,34 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
 from my_fastapi_project.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordUpdate
-from my_fastapi_project.api.deps import UserServiceDep, CurrentUserDep
+from my_fastapi_project.api.deps import (
+    UserServiceDep,
+    CurrentUserDep,
+    PaginationDep,
+    get_caller_role,
+    log_request,
+    users_rate_limit,
+    register_rate_limit,
+    require_role,
+    ROLE_ADMIN
+)
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+    dependencies=[
+        Depends(users_rate_limit),
+        Depends(get_caller_role),
+        Depends(log_request)
+    ],
+)
 
 
-@router.post("/register/", response_model=UserResponse, status_code=201)
+@router.post("/register/",
+             response_model=UserResponse,
+             status_code=201,
+             dependencies=[Depends(register_rate_limit)],
+             )
 async def register_user(user: UserCreate, service: UserServiceDep):
     created = service.register(user)
     if created is None:
@@ -23,8 +45,8 @@ async def get_user(user_data: CurrentUserDep):
 
 
 @router.get("/", response_model=list[UserResponse])
-async def get_users(service: UserServiceDep):
-    return service.list_users()
+async def get_users(pagination: PaginationDep, service: UserServiceDep):
+    return service.list_users(pagination.offset, pagination.limit)
 
 
 @router.put("/{username}/password", status_code=204)
@@ -49,6 +71,10 @@ async def user_update(
     return service.update_user(user_data["username"], payload)
 
 
-@router.delete("/{username}", status_code=204)
+@router.delete(
+    "/{username}",
+    status_code=204,
+    dependencies=[Depends(require_role(ROLE_ADMIN))],
+)
 async def user_delete(user_data: CurrentUserDep, service: UserServiceDep):
     service.delete_user(user_data["username"])

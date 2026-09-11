@@ -7,7 +7,8 @@ from my_fastapi_project.api.deps import (
     PaginationDep,
     get_caller_role,
     log_request,
-    rate_limit,
+    books_rate_limit,
+    register_rate_limit,
     require_role,
     ROLE_ADMIN
 )
@@ -16,14 +17,17 @@ router = APIRouter(
     prefix="/books",
     tags=["books"],
     dependencies=[
-        Depends(rate_limit),
+        Depends(books_rate_limit),
         Depends(get_caller_role),
         Depends(log_request)
     ],
 )
 
 
-@router.post("/", response_model=BookResponse, status_code=201)
+@router.post("/",
+             response_model=BookResponse,
+             status_code=201,
+             )
 async def register_book(book: BookCreate, service: BookServiceDep):
     create = service.create(book)
     if create is None:
