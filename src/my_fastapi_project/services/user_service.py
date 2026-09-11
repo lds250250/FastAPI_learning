@@ -1,7 +1,7 @@
 from typing import Any
 
 from my_fastapi_project.repositories.user_repo import UserRepository
-from my_fastapi_project.schemas.user import UserCreate, UserUpdate, PasswordUpdate
+from my_fastapi_project.schemas.user import PasswordUpdate, UserCreate, UserUpdate
 
 
 def _hash_password(raw: str) -> str:
@@ -19,7 +19,7 @@ class UserService:
             "username": user.username,
             "email": user.email,
             "password": _hash_password(user.password),
-            "profile": user.profile.model_dump() if user.profile else None
+            "profile": user.profile.model_dump() if user.profile else None,
         }
         return self.repo.create(user.username, data)
 
@@ -28,7 +28,7 @@ class UserService:
 
     def list_users(self, offset: int, limit: int) -> list[dict[str, Any]]:
         users = self.repo.list_all()
-        return users[offset: offset + limit]
+        return users[offset : offset + limit]
 
     def change_password(self, username: str, data: PasswordUpdate) -> bool:
         user = self.repo.get(username)
@@ -36,8 +36,7 @@ class UserService:
             return False
         if user["password"] != _hash_password(data.old_password):
             return False
-        self.repo.update(
-            username, {"password": _hash_password(data.new_password)})
+        self.repo.update(username, {"password": _hash_password(data.new_password)})
         return True
 
     def update_user(self, username: str, data: UserUpdate) -> dict[str, Any] | None:

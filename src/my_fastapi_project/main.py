@@ -3,18 +3,21 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-
-from my_fastapi_project.core.config import get_settings
-from my_fastapi_project.api.routers.user import router as user_router
-from my_fastapi_project.api.routers.health import router as health_router
 from my_fastapi_project.api.routers.book import router as book_router
+from my_fastapi_project.api.routers.health import router as health_router
+from my_fastapi_project.api.routers.user import router as user_router
+from my_fastapi_project.core.config import get_settings
+from my_fastapi_project.core.errors import register_exception_handlers
 
 settings = get_settings()
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
+register_exception_handlers(app)
+
 
 # ---------- 请求日志中间件 ----------
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

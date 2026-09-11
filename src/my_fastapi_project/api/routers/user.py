@@ -1,15 +1,20 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from my_fastapi_project.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordUpdate
 from my_fastapi_project.api.deps import (
-    UserServiceDep,
+    ROLE_ADMIN,
     CurrentUserDep,
     PaginationDep,
+    UserServiceDep,
     get_caller_role,
-    users_rate_limit,
     register_rate_limit,
     require_role,
-    ROLE_ADMIN
+    users_rate_limit,
+)
+from my_fastapi_project.schemas.user import (
+    PasswordUpdate,
+    UserCreate,
+    UserResponse,
+    UserUpdate,
 )
 
 router = APIRouter(
@@ -22,18 +27,16 @@ router = APIRouter(
 )
 
 
-@router.post("/register/",
-             response_model=UserResponse,
-             status_code=201,
-             dependencies=[Depends(register_rate_limit)],
-             )
+@router.post(
+    "/register/",
+    response_model=UserResponse,
+    status_code=201,
+    dependencies=[Depends(register_rate_limit)],
+)
 async def register_user(user: UserCreate, service: UserServiceDep):
     created = service.register(user)
     if created is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="用户名已存在"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="用户名已存在")
     return created
 
 
@@ -49,9 +52,7 @@ async def get_users(pagination: PaginationDep, service: UserServiceDep):
 
 @router.put("/{username}/password", status_code=204)
 async def password_update(
-    password_data: PasswordUpdate,
-    user_data: CurrentUserDep,
-    service: UserServiceDep
+    password_data: PasswordUpdate, user_data: CurrentUserDep, service: UserServiceDep
 ):
     if not service.change_password(user_data["username"], password_data):
         raise HTTPException(
@@ -62,9 +63,7 @@ async def password_update(
 
 @router.patch("/{username}", response_model=UserResponse)
 async def user_update(
-    payload: UserUpdate,
-    user_data: CurrentUserDep,
-    service: UserServiceDep
+    payload: UserUpdate, user_data: CurrentUserDep, service: UserServiceDep
 ):
     return service.update_user(user_data["username"], payload)
 

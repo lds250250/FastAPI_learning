@@ -1,15 +1,15 @@
-from fastapi import HTTPException, status, APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from my_fastapi_project.schemas.book import BookUpdate, BookCreate, BookResponse
 from my_fastapi_project.api.deps import (
+    ROLE_ADMIN,
     BookServiceDep,
     CurrentBookDep,
     PaginationDep,
-    get_caller_role,
     books_rate_limit,
+    get_caller_role,
     require_role,
-    ROLE_ADMIN
 )
+from my_fastapi_project.schemas.book import BookCreate, BookResponse, BookUpdate
 
 router = APIRouter(
     prefix="/books",
@@ -21,17 +21,15 @@ router = APIRouter(
 )
 
 
-@router.post("/",
-             response_model=BookResponse,
-             status_code=201,
-             )
+@router.post(
+    "/",
+    response_model=BookResponse,
+    status_code=201,
+)
 async def register_book(book: BookCreate, service: BookServiceDep):
     create = service.create(book)
     if create is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="ISBN 已存在"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="ISBN 已存在")
     return create
 
 
@@ -47,9 +45,7 @@ async def get_book(book_data: CurrentBookDep):
 
 @router.patch("/{isbn}", response_model=BookResponse)
 async def book_update(
-    payload: BookUpdate,
-    service: BookServiceDep,
-    book_data: CurrentBookDep
+    payload: BookUpdate, service: BookServiceDep, book_data: CurrentBookDep
 ):
     return service.update_book(book_data["isbn"], payload)
 
@@ -67,8 +63,5 @@ async def book_delete(service: BookServiceDep, book_data: CurrentBookDep):
 async def book_borrow(service: BookServiceDep, book_data: CurrentBookDep):
     borrowed = service.borrow(book_data["isbn"])
     if borrowed is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="库存不足"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="库存不足")
     return borrowed
