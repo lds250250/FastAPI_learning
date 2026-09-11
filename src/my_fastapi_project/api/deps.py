@@ -81,14 +81,35 @@ class Pagination:
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
 
 
-DEMO_API_KEY = "demo-secret-key"
+API_KEYS = {
+    "demo-secret-key": "user",
+    "admin-secret-key": "admin",
+}
+
+ROLE_USER = "user"
+ROLE_ADMIN = "admin"
 
 
-async def verify_api_key(
+async def get_caller_role(
         x_api_key: Annotated[str | None, Header()] = None,
-) -> None:
-    if x_api_key != DEMO_API_KEY:
+) -> str:
+    role = API_KEYS.get(x_api_key)
+    if role is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API Key 无效或缺失",
         )
+    return role
+
+CallerRoleDep = Annotated[str, Depends(get_caller_role)]
+
+
+def require_role(required: str):
+    async def checker(role: CallerRoleDep) -> None:
+        if role != required:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"需要 {required} 权限",
+            )
+
+    return checker

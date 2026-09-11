@@ -5,13 +5,15 @@ from my_fastapi_project.api.deps import (
     BookServiceDep,
     CurrentBookDep,
     PaginationDep,
-    verify_api_key,
+    get_caller_role,
+    require_role,
+    ROLE_ADMIN
 )
 
 router = APIRouter(
     prefix="/books",
     tags=["books"],
-    dependencies=[Depends(verify_api_key)],
+    dependencies=[Depends(get_caller_role)],
 )
 
 
@@ -45,7 +47,11 @@ async def book_update(
     return service.update_book(book_data["isbn"], payload)
 
 
-@router.delete("/{isbn}", status_code=204)
+@router.delete(
+    "/{isbn}",
+    status_code=204,
+    dependencies=[Depends(require_role(ROLE_ADMIN))],
+)
 async def book_delete(service: BookServiceDep, book_data: CurrentBookDep):
     service.delete_book(book_data["isbn"])
 
