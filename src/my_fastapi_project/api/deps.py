@@ -1,5 +1,8 @@
-from fastapi import HTTPException, status, Depends, Query, Header
+import time
 from typing import Annotated
+
+from fastapi import HTTPException, status, Depends, Query, Header, Request
+
 
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.user_service import UserService
@@ -113,3 +116,41 @@ def require_role(required: str):
             )
 
     return checker
+
+
+# ---------- 限流 ----------
+
+
+RATE_LIMIT_TIMES = 5
+RATE_LIMIT_WINDOW = 60
+
+_hits: dict[str, list[float]] = {}
+
+
+async def rate_limit(request: Request) -> None:
+    client = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+
+    timestamps = _hits.setdefault(client, [])
+
+    cutoff = now-RATE_LIMIT_WINDOW
+    while timestamps and timestamps[0] < cutoff:
+        timestamps.pop(0)
+
+    if len(timestamps) >= RATE_LIMIT_TIMES:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
+
+    timestamps.append(now)
+
+
+# ---------- 请求耗时日志 ----------
+
+
+async def log_request(request: Request):
+    start = time.monotonic()
+    yield
+    elapsed = (time.monotonic()-start)*1000
+    print(f"[{request.method}]{request.url.path} {elapsed:.0f} ms")

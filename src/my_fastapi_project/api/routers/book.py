@@ -6,6 +6,8 @@ from my_fastapi_project.api.deps import (
     CurrentBookDep,
     PaginationDep,
     get_caller_role,
+    log_request,
+    rate_limit,
     require_role,
     ROLE_ADMIN
 )
@@ -13,7 +15,11 @@ from my_fastapi_project.api.deps import (
 router = APIRouter(
     prefix="/books",
     tags=["books"],
-    dependencies=[Depends(get_caller_role)],
+    dependencies=[
+        Depends(rate_limit),
+        Depends(get_caller_role),
+        Depends(log_request)
+    ],
 )
 
 
