@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
     ROLE_ADMIN,
+    CallerDep,
     CurrentUserDep,
     PaginationDep,
     UserServiceDep,
@@ -35,6 +36,11 @@ router = APIRouter(
 )
 async def register_user(user: UserCreate, service: UserServiceDep):
     return service.register(user)
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(caller: CallerDep):
+    return caller
 
 
 @router.get("/{username}", response_model=UserResponse)

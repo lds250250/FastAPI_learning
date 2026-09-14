@@ -1,13 +1,18 @@
 import time
 from typing import Annotated
 
+import jwt
 from fastapi import Depends, Header, HTTPException, Query, Request, status
+from fastapi.security import OAuth2PasswordBearer
 
+from my_fastapi_project.core.exceptions import InvalidCredentials
+from my_fastapi_project.core.security import decode_access_token
 from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.book_service import BookService
 from my_fastapi_project.services.user_service import UserService
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # ---------- USER ----------
 
 
@@ -162,3 +167,25 @@ login_rate_limit = rate_limiter("auth:token", 5, 60)
 books_rate_limit = rate_limiter("books", 5, 60)
 users_rate_limit = rate_limiter("users", 10, 60)
 register_rate_limit = rate_limiter("users:register", 3, 60)
+
+
+# ---------- token ----------
+
+
+async def get_caller(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    service: UserServiceDep,
+) -> dict:
+    try:
+        payload = decode_access_token(token)
+    except jwt.InvalidTokenError:
+        raise InvalidCredentials()
+
+    user = service.get_user(payload["sub"])
+    if user is None:
+        raise InvalidCredentials()
+
+    return user
+
+
+CallerDep = Annotated[dict, Depends(get_caller)]
