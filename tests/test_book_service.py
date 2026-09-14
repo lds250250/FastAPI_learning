@@ -33,7 +33,7 @@ def test_register_repeat_book_raises(service):
     service.create(make_book())
 
     with pytest.raises(BookAlreadyExists):
-        service.create(make_book(isbn="9787115428028"))
+        service.create(make_book("9787115428028"))
 
 
 def test_register_borrow_is_right(service):
@@ -48,7 +48,7 @@ def test_register_borrow_zero_raises(service):
     service.create(make_book(stock=0))
 
     with pytest.raises(OutOfStock):
-        service.borrow(make_book(isbn="9787115428028"))
+        service.borrow("9787115428028")
 
 
 def test_register_get_book_none(service):

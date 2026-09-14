@@ -156,6 +156,9 @@ def rate_limiter(scope: str, times: int, window: int):
     return limiter
 
 
+login_rate_limit = rate_limiter("auth:token", 5, 60)
+
+
 books_rate_limit = rate_limiter("books", 5, 60)
 users_rate_limit = rate_limiter("users", 10, 60)
 register_rate_limit = rate_limiter("users:register", 3, 60)

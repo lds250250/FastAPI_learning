@@ -39,3 +39,10 @@ class EmailAlreadyExists(BusinessError):
 
     def __init__(self, email: str):
         super().__init__(f"邮箱'{email}'已被使用")
+
+
+class InvalidCredentials(BusinessError):
+    status_code = 401
+
+    def __init__(self):
+        super().__init__("用户名或密码不正确")

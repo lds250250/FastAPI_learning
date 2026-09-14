@@ -4,6 +4,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from my_fastapi_project.api.routers.auth import router as auth_router
 from my_fastapi_project.api.routers.book import router as book_router
 from my_fastapi_project.api.routers.health import router as health_router
 from my_fastapi_project.api.routers.user import router as user_router
@@ -13,6 +14,8 @@ from my_fastapi_project.core.errors import register_exception_handlers
 settings = get_settings()
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+app.include_router(auth_router)
 
 register_exception_handlers(app)
 

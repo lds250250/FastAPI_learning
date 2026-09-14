@@ -4,13 +4,11 @@ from my_fastapi_project.core.exceptions import (
     EmailAlreadyExists,
     InvalidOldPassword,
     UsernameAlreadyExists,
+    InvalidCredentials,
 )
+from my_fastapi_project.core.security import hash_password, verify_password
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.schemas.user import PasswordUpdate, UserCreate, UserUpdate
-
-
-def _hash_password(raw: str) -> str:
-    return f"hashed_{raw}"
 
 
 class UserService:
@@ -25,7 +23,7 @@ class UserService:
         data = {
             "username": user.username,
             "email": user.email,
-            "password": _hash_password(user.password),
+            "password": hash_password(user.password),
             "profile": user.profile.model_dump() if user.profile else None,
         }
         return self.repo.create(user.username, data)
@@ -39,9 +37,9 @@ class UserService:
 
     def change_password(self, username: str, data: PasswordUpdate) -> None:
         user = self.repo.get(username)
-        if user is None or user["password"] != _hash_password(data.old_password):
+        if user is None or not verify_password(data.old_password, user["password"]):
             raise InvalidOldPassword()
-        self.repo.update(username, {"password": _hash_password(data.new_password)})
+        self.repo.update(username, {"password": hash_password(data.new_password)})
 
     def update_user(self, username: str, data: UserUpdate) -> dict[str, Any] | None:
         payload = data.model_dump(exclude_unset=True)
@@ -49,3 +47,9 @@ class UserService:
 
     def delete_user(self, username: str) -> bool:
         return self.repo.delete(username)
+
+    def authenticate(self, username: str, password: str) -> dict[str, Any]:
+        user = self.repo.get(username)
+        if user is None or not verify_password(password, user["password"]):
+            raise InvalidCredentials()
+        return user

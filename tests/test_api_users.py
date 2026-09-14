@@ -69,3 +69,12 @@ def test_delete_user_as_admin(admin_client):
     response = admin_client.delete("/users/alice")
 
     assert response.status_code == 204
+
+
+def test_register_password_over_72_bytes_returns_422(auth_client):
+    response = auth_client.post(
+        "/users/register/",
+        json=make_user_payload(password="中" * 25),
+    )
+
+    assert response.status_code == 422

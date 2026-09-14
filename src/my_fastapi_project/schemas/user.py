@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserProfile(BaseModel):
@@ -9,8 +9,15 @@ class UserProfile(BaseModel):
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20, description="用户名")
     email: EmailStr = Field(..., description="用户邮箱")
-    password: str = Field(..., min_length=8, description="用户密码")
+    password: str = Field(..., min_length=8, max_length=72, description="用户密码")
     profile: UserProfile | None = Field(None, description="个人简介信息")
+
+    @field_validator("password")
+    @classmethod
+    def password_within_bcrypt_limit(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("密码过长")
+        return value
 
 
 class UserResponse(BaseModel):
