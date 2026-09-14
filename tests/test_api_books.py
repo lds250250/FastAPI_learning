@@ -13,16 +13,15 @@ def test_list_books_with_key(client):
     assert response.json() == []
 
 
-def test_get_missing_book_returns_404(client):
-    response = client.get("/books/0000000000000", headers=API_KEY_HEADERS)
+def test_get_missing_book_returns_404(auth_client):
+    response = auth_client.get("/books/0000000000000")
     assert response.status_code == 404
     assert "0000000000000" in response.json()["message"]
 
 
-def test_create_book_with_invalid_price(client):
-    response = client.post(
+def test_create_book_with_invalid_price(auth_client):
+    response = auth_client.post(
         "/books/",
-        headers=API_KEY_HEADERS,
         json={
             "isbn": "9787115428028",
             "title": "流畅的Python",
@@ -33,3 +32,14 @@ def test_create_book_with_invalid_price(client):
     )
     assert response.status_code == 422
     assert response.json()["code"] == 422
+
+
+def test_rate_limit_blocks_sixth_request(auth_client):
+    for _ in range(5):
+        response = auth_client.get("/books/")
+        assert response.status_code == 200
+
+    response = auth_client.get("/books/")
+
+    assert response.status_code == 429
+    assert response.json()["code"] == 429
