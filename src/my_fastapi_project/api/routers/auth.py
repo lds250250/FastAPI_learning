@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from my_fastapi_project.api.deps import UserServiceDep, login_rate_limit
+from my_fastapi_project.core.security import create_access_token
 from my_fastapi_project.schemas.token import Token
 
 router = APIRouter(tags=["auth"])
@@ -15,4 +16,4 @@ async def login(
     service: UserServiceDep,
 ):
     user = service.authenticate(form_data.username, form_data.password)
-    return Token(access_token=user["username"])
+    return Token(access_token=create_access_token(user["username"]))
