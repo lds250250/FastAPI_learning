@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from my_fastapi_project.api.deps import _hits
+from my_fastapi_project.api.deps import ROLE_ADMIN, ROLE_USER, _hits, get_caller_role
 from my_fastapi_project.main import app
 from my_fastapi_project.repositories.book_repo import _books
 from my_fastapi_project.repositories.user_repo import UserRepository, _users
@@ -27,3 +27,17 @@ def empty_user_repo() -> UserRepository:
 def client():
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def auth_client(client):
+    app.dependency_overrides[get_caller_role] = lambda: ROLE_USER
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_client(client):
+    app.dependency_overrides[get_caller_role] = lambda: ROLE_ADMIN
+    yield client
+    app.dependency_overrides.clear()
