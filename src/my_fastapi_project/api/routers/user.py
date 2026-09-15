@@ -7,7 +7,9 @@ from my_fastapi_project.api.deps import (
     UserServiceDep,
     get_caller,
     register_rate_limit,
+    require_not_self,
     require_role,
+    require_self_or_admin,
     users_rate_limit,
 )
 from my_fastapi_project.core.roles import ROLE_ADMIN
@@ -54,7 +56,14 @@ async def get_users(pagination: PaginationDep, service: UserServiceDep):
     return service.list_users(pagination.offset, pagination.limit)
 
 
-@router.put("/{username}/password", status_code=204, dependencies=[Depends(get_caller)])
+@router.put(
+    "/{username}/password",
+    status_code=204,
+    dependencies=[
+        Depends(get_caller),
+        Depends(require_self_or_admin),
+    ],
+)
 async def password_update(
     password_data: PasswordUpdate,
     user_data: PathUserDep,
@@ -64,7 +73,12 @@ async def password_update(
 
 
 @router.patch(
-    "/{username}", response_model=UserResponse, dependencies=[Depends(get_caller)]
+    "/{username}",
+    response_model=UserResponse,
+    dependencies=[
+        Depends(get_caller),
+        Depends(require_self_or_admin),
+    ],
 )
 async def user_update(
     payload: UserUpdate, user_data: PathUserDep, service: UserServiceDep
@@ -75,7 +89,10 @@ async def user_update(
 @router.delete(
     "/{username}",
     status_code=204,
-    dependencies=[Depends(require_role(ROLE_ADMIN))],
+    dependencies=[
+        Depends(require_role(ROLE_ADMIN)),
+        Depends(require_not_self),
+    ],
 )
 async def user_delete(user_data: PathUserDep, service: UserServiceDep):
     service.delete_user(user_data["username"])

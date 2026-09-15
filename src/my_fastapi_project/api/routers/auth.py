@@ -3,10 +3,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from my_fastapi_project.api.deps import UserServiceDep, login_rate_limit
+from my_fastapi_project.api.deps import CallerDep, UserServiceDep, login_rate_limit
 from my_fastapi_project.core.security import create_access_token
 from my_fastapi_project.schemas.token import Token
-from my_fastapi_project.api.deps import CallerDep, UserServiceDep, login_rate_limit
 
 router = APIRouter(tags=["auth"])
 

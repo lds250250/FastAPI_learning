@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
 from my_fastapi_project.core.exceptions import InvalidCredentials
+from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.user_repo import UserRepository
@@ -167,3 +168,23 @@ async def get_caller(
 
 
 CallerDep = Annotated[dict, Depends(get_caller)]
+
+
+async def require_self_or_admin(caller: CallerDep, username: str):
+    if caller["role"] == ROLE_ADMIN:
+        return
+    if caller["username"] == username:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="只能操作自己的资料",
+    )
+
+
+async def require_not_self(caller: CallerDep, username: str) -> None:
+    """不允许对自己执行这个操作。"""
+    if caller["username"] == username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="不能对自己执行此操作",
+        )
