@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
@@ -36,7 +38,7 @@ router = APIRouter(
     dependencies=[Depends(register_rate_limit)],
 )
 async def register_user(user: UserCreate, service: UserServiceDep):
-    return service.register(user)
+    return await asyncio.to_thread(service.register, user)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -69,7 +71,11 @@ async def password_update(
     user_data: PathUserDep,
     service: UserServiceDep,
 ):
-    service.change_password(user_data["username"], password_data)
+    return await asyncio.to_thread(
+        service.change_password,
+        user_data["username"],
+        password_data,
+    )
 
 
 @router.patch(
