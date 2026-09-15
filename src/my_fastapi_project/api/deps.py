@@ -1,10 +1,13 @@
 import time
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from my_fastapi_project.core.db import SessionFactory
 from my_fastapi_project.core.exceptions import InvalidCredentials
 from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
@@ -14,6 +17,16 @@ from my_fastapi_project.services.book_service import BookService
 from my_fastapi_project.services.user_service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# ---------- 会话 ----------
+
+
+async def get_session() -> AsyncIterator[AsyncSession]:
+    async with SessionFactory() as session:
+        yield session
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # ---------- USER ----------
 
