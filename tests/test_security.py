@@ -58,8 +58,33 @@ def test_access_token_expires_in_the_future():
 
 def test_token_signed_with_another_key_is_rejected():
     forged = jwt.encode(
-        {"sub": "admin"}, "wrong-secret-wrong-secret-wrong-secret", algorithm="HS256"
+        {"sub": "alice", "exp": time.time() + 3600},
+        "wrong-secret-wrong-secret-wrong-secret",
+        algorithm="HS256",
     )
 
     with pytest.raises(jwt.InvalidTokenError):
         decode_access_token(forged)
+
+
+def text_expired_token_is_rejected():
+    token = create_access_token("alice", expires_minutes=-1)
+
+    with pytest.raises(jwt.ExpiredSignatureError):
+        decode_access_token(token)
+
+
+def test_expires_minutes_is_respected():
+    token = create_access_token("alice", expires_minutes=1)
+
+    payload = decode_access_token(token)
+
+    remaining_seconds = payload["exp"] - time.time()
+    assert 0 < remaining_seconds <= 60
+
+
+def test_expired_token_is_rejected():
+    token = create_access_token("alice", expires_minutes=-1)
+
+    with pytest.raises(jwt.ExpiredSignatureError):
+        decode_access_token(token)

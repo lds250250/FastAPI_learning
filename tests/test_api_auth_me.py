@@ -2,6 +2,8 @@ import time
 
 import jwt
 
+from my_fastapi_project.core.security import create_access_token
+
 
 def register_user(client, username: str = "alice") -> str:
     client.post(
@@ -46,5 +48,28 @@ def test_me_with_forged_token_returns_401(client):
     )
 
     response = client.get("/users/me", headers={"Authorization": f"Bearer {forged}"})
+
+    assert response.status_code == 401
+
+
+def test_me_with_expired_token_returns_401(client):
+    register_user(client)
+
+    expired = create_access_token("alice", expires_minutes=-1)
+
+    response = client.get("/users/me", headers={"Authorization": f"Bearer {expired}"})
+
+    assert response.status_code == 401
+
+
+def test_refresh_returns_a_new_token(auth_client):
+    response = auth_client.post("/token/refresh")
+
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+
+
+def test_refresh_without_token_returns_401(client):
+    response = client.post("/token/refresh")
 
     assert response.status_code == 401
