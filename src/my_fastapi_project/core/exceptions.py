@@ -1,8 +1,10 @@
 class BusinessError(Exception):
     status_code = 400
 
-    def __init__(self, message: str):
+    def __init__(self, message: str, headers: dict[str, str] | None = None):
         self.message = message
+        self.headers = headers
+
         super().__init__(message)
 
 
@@ -17,7 +19,10 @@ class InvalidOldPassword(BusinessError):
     status_code = 400
 
     def __init__(self):
-        super().__init__("旧密码不正确")
+        super().__init__(
+            "用户名或密码不正确",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 class OutOfStock(BusinessError):

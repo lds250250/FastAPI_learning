@@ -61,3 +61,18 @@ def admin_client(client):
     token = create_access_token("admin")
     client.headers["Authorization"] = f"Bearer {token}"
     yield client
+
+
+@pytest.fixture
+def sample_book() -> str:
+    """播种一本图书，返回它的 ISBN。"""
+    isbn = "9787115428028"
+    _books[isbn] = {
+        "isbn": isbn,
+        "title": "流畅的Python",
+        "author": "Luciano Ramalho",
+        "price": 139.0,
+        "stock": 5,
+        "internal_note": None,
+    }
+    return isbn

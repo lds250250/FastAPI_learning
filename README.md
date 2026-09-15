@@ -62,7 +62,7 @@
 - **Day 5**：分层测试（脱离 HTTP 单测 Service 与 Repository，理解「测行为，不测实现」）。
 - **Day 6**：第七周综合实战 —— 给用户与图书模块补齐测试，并更新 README。
 
-## 第四阶段：测试、认证与异步数据库（第 8 周）
+## 第四阶段：测试、认证与异步数据库（第 8 周）（已完成）
 - **Day 1**：密码哈希（`bcrypt` 加盐哈希与校验，替换第 3 周的假哈希）。
 - **Day 2**：OAuth2 密码流与 `/token` 表单接口（`OAuth2PasswordRequestForm`）。
 - **Day 3**：JWT 结构与令牌生成（`SECRET_KEY`、`ALGORITHM` 终于派上用场）。

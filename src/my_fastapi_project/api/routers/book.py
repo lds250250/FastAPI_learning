@@ -25,6 +25,9 @@ router = APIRouter(
     "/",
     response_model=BookResponse,
     status_code=201,
+    dependencies=[
+        Depends(require_role(ROLE_ADMIN)),
+    ],
 )
 async def register_book(book: BookCreate, service: BookServiceDep):
     return service.create(book)
@@ -40,7 +43,13 @@ async def get_book(book_data: CurrentBookDep):
     return book_data
 
 
-@router.patch("/{isbn}", response_model=BookResponse)
+@router.patch(
+    "/{isbn}",
+    response_model=BookResponse,
+    dependencies=[
+        Depends(require_role(ROLE_ADMIN)),
+    ],
+)
 async def book_update(
     payload: BookUpdate, service: BookServiceDep, book_data: CurrentBookDep
 ):

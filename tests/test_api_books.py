@@ -10,8 +10,8 @@ def test_get_missing_book_returns_404(auth_client):
     assert "0000000000000" in response.json()["message"]
 
 
-def test_create_book_with_invalid_price(auth_client):
-    response = auth_client.post(
+def test_create_book_with_invalid_price(admin_client):
+    response = admin_client.post(
         "/books/",
         json={
             "isbn": "9787115428028",

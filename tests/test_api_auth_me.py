@@ -44,7 +44,9 @@ def test_me_with_garbage_token_returns_401(client):
 
 def test_me_with_forged_token_returns_401(client):
     forged = jwt.encode(
-        {"sub": "alice", "exp": time.time() + 3600}, "wrong-secret", algorithm="HS256"
+        {"sub": "alice", "exp": time.time() + 3600},
+        "wrong-secret-wrong-secret-wrong-secret",
+        algorithm="HS256",
     )
 
     response = client.get("/users/me", headers={"Authorization": f"Bearer {forged}"})
