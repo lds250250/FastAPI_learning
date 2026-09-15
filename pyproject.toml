@@ -5,11 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiosqlite>=0.22.1",
     "bcrypt>=5.0.0",
     "fastapi[standard]>=0.141.1",
     "pydantic-settings>=2.15.0",
     "pydantic[email]>=2.13.5",
     "pyjwt>=2.14.0",
+    "sqlalchemy[asyncio]>=2.0.52",
     "uvicorn>=0.52.4",
 ]
 
@@ -27,4 +29,11 @@ default = true
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"] # I就是import排序规则，必须保留
+unfixable = [
+    "F401", # 禁止自动修复【未使用import】，不会删import，但仍然画波浪线提醒
+    "F841" # 如果你想：未使用变量也不要自动删除，可以打开这行注释
 ]

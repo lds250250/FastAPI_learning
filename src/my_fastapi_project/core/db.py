@@ -1,6 +1,16 @@
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+
+from my_fastapi_project.core.config import get_settings
+
+settings = get_settings()
+
+engine: AsyncEngine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=settings.DEBUG,
+)
 
 
 class FakeSession:
@@ -20,5 +30,6 @@ async def get_session():
         yield session
     finally:
         session.close()
+
 
 SessionDep = Annotated[FakeSession, Depends(get_session)]
