@@ -1,16 +1,7 @@
-API_KEY_HEADERS = {"x-api-key": "demo-secret-key"}
-
-
 def test_list_books_without_key_returns_401(client):
     response = client.get("/books/")
     assert response.status_code == 401
     assert response.json()["code"] == 401
-
-
-def test_list_books_with_key(client):
-    response = client.get("/books/", headers=API_KEY_HEADERS)
-    assert response.status_code == 200
-    assert response.json() == []
 
 
 def test_get_missing_book_returns_404(auth_client):

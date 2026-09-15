@@ -11,7 +11,6 @@ def register_user(client, username: str = "alice") -> str:
             "email": f"{username}@b.com",
             "password": "secret123",
         },
-        headers={"x-api-key": "demo-secret-key"},
     )
     response = client.post(
         "/token",

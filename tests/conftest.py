@@ -1,7 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from my_fastapi_project.api.deps import ROLE_ADMIN, ROLE_USER, _hits, get_caller_role
+from my_fastapi_project.api.deps import _hits
+from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
+from my_fastapi_project.core.security import create_access_token, hash_password
 from my_fastapi_project.main import app
 from my_fastapi_project.repositories.book_repo import BookRepository, _books
 from my_fastapi_project.repositories.user_repo import UserRepository, _users
@@ -34,15 +36,28 @@ def client():
         yield c
 
 
+def seed_user(username: str, role: str) -> None:
+    _users[username] = {
+        "username": username,
+        "email": f"{username}@b.com",
+        "password": hash_password("secret123"),
+        "profile": None,
+        "role": role,
+    }
+
+
 @pytest.fixture
 def auth_client(client):
-    app.dependency_overrides[get_caller_role] = lambda: ROLE_USER
+    seed_user("caller", ROLE_USER)
+    token = create_access_token("caller")
+    client.headers["Authorization"] = f"Bearer {token}"
     yield client
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def admin_client(client):
-    app.dependency_overrides[get_caller_role] = lambda: ROLE_ADMIN
+    """已登录的管理员客户端。"""
+    seed_user("admin", ROLE_ADMIN)
+    token = create_access_token("admin")
+    client.headers["Authorization"] = f"Bearer {token}"
     yield client
-    app.dependency_overrides.clear()

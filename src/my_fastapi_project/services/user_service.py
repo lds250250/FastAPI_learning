@@ -2,10 +2,11 @@ from typing import Any
 
 from my_fastapi_project.core.exceptions import (
     EmailAlreadyExists,
+    InvalidCredentials,
     InvalidOldPassword,
     UsernameAlreadyExists,
-    InvalidCredentials,
 )
+from my_fastapi_project.core.roles import ROLE_USER
 from my_fastapi_project.core.security import hash_password, verify_password
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.schemas.user import PasswordUpdate, UserCreate, UserUpdate
@@ -24,6 +25,7 @@ class UserService:
             "username": user.username,
             "email": user.email,
             "password": hash_password(user.password),
+            "role": ROLE_USER,
             "profile": user.profile.model_dump() if user.profile else None,
         }
         return self.repo.create(user.username, data)

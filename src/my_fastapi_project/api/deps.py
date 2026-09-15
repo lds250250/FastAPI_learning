@@ -2,7 +2,7 @@ import time
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, Header, HTTPException, Query, Request, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
 from my_fastapi_project.core.exceptions import InvalidCredentials
@@ -13,6 +13,7 @@ from my_fastapi_project.services.book_service import BookService
 from my_fastapi_project.services.user_service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 # ---------- USER ----------
 
 
@@ -27,21 +28,6 @@ def get_user_service(
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
-
-
-async def get_current_user(
-    username: str,
-    service: UserServiceDep,
-) -> dict:
-    user = service.get_user(username)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"用户'{username}'不存在"
-        )
-    return user
-
-
-CurrentUserDep = Annotated[dict, Depends(get_current_user)]
 
 
 # ---------- BOOK ----------
@@ -96,39 +82,31 @@ class Pagination:
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
 
 
-API_KEYS = {
-    "demo-secret-key": "user",
-    "admin-secret-key": "admin",
-}
-
-ROLE_USER = "user"
-ROLE_ADMIN = "admin"
-
-
-async def get_caller_role(
-    x_api_key: Annotated[str | None, Header()] = None,
-) -> str:
-    role = API_KEYS.get(x_api_key)
-    if role is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API Key 无效或缺失",
-        )
-    return role
-
-
-CallerRoleDep = Annotated[str, Depends(get_caller_role)]
-
-
 def require_role(required: str):
-    async def checker(role: CallerRoleDep) -> None:
-        if role != required:
+    async def checker(caller: CallerDep) -> None:
+        if caller["role"] != required:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"需要 {required} 权限",
             )
 
     return checker
+
+
+async def get_path_user(
+    username: str,
+    service: UserServiceDep,
+) -> dict:
+    user = service.get_user(username)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"用户 '{username}' 不存在",
+        )
+    return user
+
+
+PathUserDep = Annotated[dict, Depends(get_path_user)]
 
 
 # ---------- 限流 ----------

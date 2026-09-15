@@ -23,6 +23,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     username: str = Field(..., min_length=3, max_length=20, description="用户名")
     email: EmailStr = Field(..., description="用户邮箱")
+    role: str = Field(..., description="用户角色")
     profile: UserProfile | None = Field(None, description="个人简介信息")
 
 

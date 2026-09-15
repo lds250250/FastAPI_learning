@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
-    ROLE_ADMIN,
     BookServiceDep,
     CurrentBookDep,
     PaginationDep,
     books_rate_limit,
-    get_caller_role,
+    get_caller,
     require_role,
 )
+from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.schemas.book import BookCreate, BookResponse, BookUpdate
 
 router = APIRouter(
@@ -16,7 +16,7 @@ router = APIRouter(
     tags=["books"],
     dependencies=[
         Depends(books_rate_limit),
-        Depends(get_caller_role),
+        Depends(get_caller),
     ],
 )
 

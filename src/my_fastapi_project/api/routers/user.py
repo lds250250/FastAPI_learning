@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
-    ROLE_ADMIN,
     CallerDep,
-    CurrentUserDep,
     PaginationDep,
+    PathUserDep,
     UserServiceDep,
-    get_caller_role,
+    get_caller,
     register_rate_limit,
     require_role,
     users_rate_limit,
 )
+from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.schemas.user import (
     PasswordUpdate,
     UserCreate,
@@ -23,7 +23,6 @@ router = APIRouter(
     tags=["users"],
     dependencies=[
         Depends(users_rate_limit),
-        Depends(get_caller_role),
     ],
 )
 
@@ -43,28 +42,32 @@ async def get_me(caller: CallerDep):
     return caller
 
 
-@router.get("/{username}", response_model=UserResponse)
-async def get_user(user_data: CurrentUserDep):
+@router.get(
+    "/{username}", response_model=UserResponse, dependencies=[Depends(get_caller)]
+)
+async def get_user(user_data: PathUserDep):
     return user_data
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/", response_model=list[UserResponse], dependencies=[Depends(get_caller)])
 async def get_users(pagination: PaginationDep, service: UserServiceDep):
     return service.list_users(pagination.offset, pagination.limit)
 
 
-@router.put("/{username}/password", status_code=204)
+@router.put("/{username}/password", status_code=204, dependencies=[Depends(get_caller)])
 async def password_update(
     password_data: PasswordUpdate,
-    user_data: CurrentUserDep,
+    user_data: PathUserDep,
     service: UserServiceDep,
 ):
     service.change_password(user_data["username"], password_data)
 
 
-@router.patch("/{username}", response_model=UserResponse)
+@router.patch(
+    "/{username}", response_model=UserResponse, dependencies=[Depends(get_caller)]
+)
 async def user_update(
-    payload: UserUpdate, user_data: CurrentUserDep, service: UserServiceDep
+    payload: UserUpdate, user_data: PathUserDep, service: UserServiceDep
 ):
     return service.update_user(user_data["username"], payload)
 
@@ -74,5 +77,5 @@ async def user_update(
     status_code=204,
     dependencies=[Depends(require_role(ROLE_ADMIN))],
 )
-async def user_delete(user_data: CurrentUserDep, service: UserServiceDep):
+async def user_delete(user_data: PathUserDep, service: UserServiceDep):
     service.delete_user(user_data["username"])
