@@ -63,6 +63,14 @@ async def show() -> None:
             )
         ).scalar()
         print(f"  alice 的 profile 原文: {profile!r}")
+        tables = (
+            await session.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            )
+            .scalars()
+            .all()
+        )
+        print(f"  表: {list(tables)}")
 
 
 async def main() -> None:

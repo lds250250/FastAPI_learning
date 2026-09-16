@@ -32,9 +32,18 @@ async def check_app_engine() -> None:
     await engine.dispose()
 
 
+async def check_foreign_keys() -> None:
+    print()
+    print("三、外键约束有没有真的打开")
+    async with engine.connect() as conn:
+        enabled = (await conn.execute(text("PRAGMA foreign_keys"))).scalar()
+    print(f"   PRAGMA foreign_keys = {enabled}（1 表示已启用）")
+
+
 async def main() -> None:
     await show_lazy()
     await check_app_engine()
+    await check_foreign_keys()
 
 
 if __name__ == "__main__":

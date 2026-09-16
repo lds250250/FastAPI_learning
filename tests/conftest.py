@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from my_fastapi_project.api.deps import _hits, get_session
-from my_fastapi_project.core.db import Base
+from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
 from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
 from my_fastapi_project.core.security import create_access_token, hash_password
 from my_fastapi_project.main import app
@@ -32,6 +32,7 @@ def _run(coro):
 def db_factory(tmp_path: Path):
     url = f"sqlite+aiosqlite:///{(tmp_path / 'test.db').as_posix()}"
     engine = create_async_engine(url, poolclass=NullPool, echo=False)
+    enable_sqlite_foreign_keys(engine)
     _run(_create_all(engine))
 
     yield async_sessionmaker(engine, expire_on_commit=False)
