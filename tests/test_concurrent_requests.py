@@ -31,7 +31,7 @@ async def register_concurrently() -> tuple[float, list[int]]:
     return elapsed, [r.status_code for r in responses]
 
 
-def test_concurrent_registrations_are_not_serialized():
+def test_concurrent_registrations_are_not_serialized(use_test_db):
     start = time.perf_counter()
     hash_password("calibration")
     single_hash = time.perf_counter() - start
