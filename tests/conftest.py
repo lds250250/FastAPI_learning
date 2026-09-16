@@ -129,3 +129,10 @@ def use_test_db(db_factory):
     app.dependency_overrides[get_session] = override_get_session
     yield
     app.dependency_overrides.pop(get_session, None)
+
+
+@pytest.fixture
+def alice(db_factory) -> str:
+    """播种一个普通用户 alice，返回用户名。需要满足外键约束的测试用它。"""
+    seed_user(db_factory, "alice", ROLE_USER)
+    return "alice"

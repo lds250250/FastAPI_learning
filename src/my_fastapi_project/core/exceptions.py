@@ -51,3 +51,10 @@ class InvalidCredentials(BusinessError):
 
     def __init__(self):
         super().__init__("用户名或密码不正确")
+
+
+class NotBorrowed(BusinessError):
+    status_code = 400
+
+    def __init__(self):
+        super().__init__("你没有借这本书，或已经还过了")

@@ -12,6 +12,7 @@ from my_fastapi_project.core.exceptions import InvalidCredentials
 from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 from my_fastapi_project.repositories.book_repo import BookRepository
+from my_fastapi_project.repositories.borrow_repo import BorrowRecordRepository
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.book_service import BookService
 from my_fastapi_project.services.user_service import UserService
@@ -51,10 +52,15 @@ def get_book_repo(session: SessionDep) -> BookRepository:
     return BookRepository(session)
 
 
+def get_borrow_repo(session: SessionDep) -> BorrowRecordRepository:
+    return BorrowRecordRepository(session)
+
+
 def get_book_service(
     repo: Annotated[BookRepository, Depends(get_book_repo)],
+    record_repo: Annotated[BorrowRecordRepository, Depends(get_borrow_repo)],
 ) -> BookService:
-    return BookService(repo)
+    return BookService(repo, record_repo)
 
 
 BookServiceDep = Annotated[BookService, Depends(get_book_service)]

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
     BookServiceDep,
+    CallerDep,
     CurrentBookDep,
     PaginationDep,
     books_rate_limit,
@@ -66,5 +67,14 @@ async def book_delete(service: BookServiceDep, book_data: CurrentBookDep):
 
 
 @router.post("/{isbn}/borrow", response_model=BookResponse)
-async def book_borrow(service: BookServiceDep, book_data: CurrentBookDep):
-    return await service.borrow(book_data["isbn"])
+async def book_borrow(
+    caller: CallerDep, service: BookServiceDep, book_data: CurrentBookDep
+):
+    return await service.borrow(caller["username"], book_data["isbn"])
+
+
+@router.post("/{isbn}/return", response_model=BookResponse)
+async def book_return(
+    caller: CallerDep, service: BookServiceDep, book_data: CurrentBookDep
+):
+    return await service.return_book(caller["username"], book_data["isbn"])

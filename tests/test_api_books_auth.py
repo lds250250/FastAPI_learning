@@ -47,3 +47,20 @@ def test_delete_book_as_admin(admin_client):
     response = admin_client.delete("/books/9787115428028")
 
     assert response.status_code == 204
+
+
+def test_borrow_then_return(auth_client, sample_book):
+    borrowed = auth_client.post(f"/books/{sample_book}/borrow")
+    assert borrowed.status_code == 200
+    assert borrowed.json()["stock"] == 4
+
+    returned = auth_client.post(f"/books/{sample_book}/return")
+    assert returned.status_code == 200
+    assert returned.json()["stock"] == 5
+
+
+def test_return_without_borrowing_returns_400(auth_client, sample_book):
+    response = auth_client.post(f"/books/{sample_book}/return")
+
+    assert response.status_code == 400
+    assert response.json()["code"] == 400

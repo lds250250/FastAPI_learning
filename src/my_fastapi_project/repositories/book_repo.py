@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from my_fastapi_project.models import Book
@@ -54,3 +54,19 @@ class BookRepository:
         await self.session.delete(book)
         await self.session.commit()
         return True
+
+    async def decrement_stock(self, isbn: str) -> bool:
+        """原子地把库存减 1。True 表示扣减成功，False 表示没库存了。"""
+        result = await self.session.execute(
+            update(Book)
+            .where(Book.isbn == isbn, Book.stock > 0)
+            .values(stock=Book.stock - 1)
+        )
+        await self.session.commit()
+        return result.rowcount == 1
+
+    async def increment_stock(self, isbn: str) -> None:
+        await self.session.execute(
+            update(Book).where(Book.isbn == isbn).values(stock=Book.stock + 1)
+        )
+        await self.session.commit()
