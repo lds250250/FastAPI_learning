@@ -15,6 +15,7 @@ from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.borrow_repo import BorrowRecordRepository
 from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.book_service import BookService
+from my_fastapi_project.services.borrow_service import BorrowService
 from my_fastapi_project.services.user_service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -207,3 +208,13 @@ async def require_not_self(caller: CallerDep, username: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="不能对自己执行此操作",
         )
+
+
+# ---------- borrow ----------
+def get_borrow_service(
+    repo: Annotated[BorrowRecordRepository, Depends(get_borrow_repo)],
+) -> BorrowService:
+    return BorrowService(repo)
+
+
+BorrowServiceDep = Annotated[BorrowService, Depends(get_borrow_service)]

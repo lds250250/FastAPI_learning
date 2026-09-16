@@ -27,8 +27,13 @@ class UserRepository:
     async def exists(self, username: str) -> bool:
         return await self.session.get(User, username) is not None
 
-    async def list_all(self) -> list[dict[str, Any]]:
-        result = await self.session.execute(select(User).order_by(User.username))
+    async def list_all(
+        self, offset: int = 0, limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        stmt = select(User).order_by(User.username).offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        result = await self.session.execute(stmt)
         return [_to_dict(user) for user in result.scalars()]
 
     async def create(self, username: str, data: dict[str, Any]) -> dict[str, Any]:

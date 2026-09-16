@@ -34,8 +34,13 @@ class BookRepository:
         book = await self.session.get(Book, isbn)
         return _to_dict(book) if book else None
 
-    async def list_all(self) -> list[dict[str, Any]]:
-        result = await self.session.execute(select(Book).order_by(Book.isbn))
+    async def list_all(
+        self, offset: int = 0, limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        stmt = select(Book).order_by(Book.isbn).offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        result = await self.session.execute(stmt)
         return [_to_dict(book) for book in result.scalars()]
 
     async def update(self, isbn: str, data: dict[str, Any]) -> dict[str, Any] | None:

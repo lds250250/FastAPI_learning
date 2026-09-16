@@ -3,6 +3,7 @@ from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from my_fastapi_project.models import BorrowRecord
 
@@ -46,3 +47,15 @@ class BorrowRecordRepository:
             return
         record.returned_at = datetime.now(UTC)
         await self.session.commit()
+
+    async def list_by_username(self, username: str) -> list[dict[str, Any]]:
+        result = await self.session.execute(
+            select(BorrowRecord)
+            .options(selectinload(BorrowRecord.book))
+            .where(BorrowRecord.username == username)
+            .order_by(BorrowRecord.borrowed_at.desc())
+        )
+        return [
+            {**_to_dict(record), "title": record.book.title}
+            for record in result.scalars()
+        ]

@@ -35,8 +35,7 @@ class UserService:
         return await self.repo.get(username)
 
     async def list_users(self, offset: int, limit: int) -> list[dict[str, Any]]:
-        users = await self.repo.list_all()
-        return users[offset : offset + limit]
+        return await self.repo.list_all(offset, limit)
 
     async def change_password(self, username: str, data: PasswordUpdate) -> None:
         user = await self.repo.get(username)

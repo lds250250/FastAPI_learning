@@ -22,8 +22,7 @@ class BookService:
         return await self.repo.create(book.isbn, data)
 
     async def list_book(self, offset: int, limit: int) -> list[dict[str, Any]]:
-        books = await self.repo.list_all()
-        return books[offset : offset + limit]
+        return await self.repo.list_all(offset, limit)
 
     async def get_book(self, isbn: str) -> dict[str, Any] | None:
         return await self.repo.get(isbn)
