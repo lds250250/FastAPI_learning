@@ -31,8 +31,8 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 # ---------- USER ----------
 
 
-def get_user_repo() -> UserRepository:
-    return UserRepository()
+def get_user_repo(session: SessionDep) -> UserRepository:
+    return UserRepository(session)
 
 
 def get_user_service(
@@ -111,7 +111,7 @@ async def get_path_user(
     username: str,
     service: UserServiceDep,
 ) -> dict:
-    user = service.get_user(username)
+    user = await service.get_user(username)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -173,7 +173,7 @@ async def get_caller(
     except jwt.InvalidTokenError:
         raise InvalidCredentials()
 
-    user = service.get_user(payload["sub"])
+    user = await service.get_user(payload["sub"])
     if user is None:
         raise InvalidCredentials()
 

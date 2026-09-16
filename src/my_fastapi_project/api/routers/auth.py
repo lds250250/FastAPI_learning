@@ -1,4 +1,3 @@
-import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -16,11 +15,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: UserServiceDep,
 ):
-    user = await asyncio.to_thread(
-        service.authenticate,
-        form_data.username,
-        form_data.password,
-    )
+    user = await service.authenticate(form_data.username, form_data.password)
     return Token(access_token=create_access_token(user["username"]))
 
 

@@ -1,32 +1,61 @@
 from typing import Any
 
-# 进程级假数据库：放模块顶层，所有 UserRepository 实例共享同一份数据
-_users: dict[str, dict[str, Any]] = {}
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from my_fastapi_project.models import User
+
+
+def _to_dict(user: User) -> dict[str, Any]:
+    return {
+        "username": user.username,
+        "email": user.email,
+        "password": user.password,
+        "role": user.role,
+        "profile": user.profile,
+    }
 
 
 class UserRepository:
-    def get(self, username: str) -> dict[str, Any] | None:
-        return _users.get(username)
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-    def exists(self, username: str) -> bool:
-        return username in _users
+    async def get(self, username: str) -> dict[str, Any] | None:
+        user = await self.session.get(User, username)
+        return _to_dict(user) if user else None
 
-    def list_all(self) -> list[dict[str, Any]]:
-        return list(_users.values())
+    async def exists(self, username: str) -> bool:
+        return await self.session.get(User, username) is not None
 
-    def create(self, username: str, data: dict[str, Any]) -> dict[str, Any]:
-        _users[username] = data
-        return _users[username]
+    async def list_all(self) -> list[dict[str, Any]]:
+        result = await self.session.execute(select(User).order_by(User.username))
+        return [_to_dict(user) for user in result.scalars()]
 
-    def update(self, username: str, data: dict[str, Any]) -> dict[str, Any] | None:
-        user = _users.get(username)
+    async def create(self, username: str, data: dict[str, Any]) -> dict[str, Any]:
+        user = User(**data)
+        self.session.add(user)
+        await self.session.commit()
+        return _to_dict(user)
+
+    async def update(
+        self, username: str, data: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        user = await self.session.get(User, username)
         if user is None:
             return None
-        user.update(data)
-        return user
+        for key, value in data.items():
+            setattr(user, key, value)
+        await self.session.commit()
+        return _to_dict(user)
 
-    def delete(self, username: str) -> bool:
-        return _users.pop(username, None) is not None
+    async def delete(self, username: str) -> bool:
+        user = await self.session.get(User, username)
+        if user is None:
+            return False
+        await self.session.delete(user)
+        await self.session.commit()
+        return True
 
-    def exists_email(self, email: str) -> bool:
-        return any(u["email"] == email for u in _users.values())
+    async def exists_email(self, email: str) -> bool:
+        result = await self.session.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none() is not None

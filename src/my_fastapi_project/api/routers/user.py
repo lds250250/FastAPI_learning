@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import APIRouter, Depends
 
 from my_fastapi_project.api.deps import (
@@ -38,7 +36,7 @@ router = APIRouter(
     dependencies=[Depends(register_rate_limit)],
 )
 async def register_user(user: UserCreate, service: UserServiceDep):
-    return await asyncio.to_thread(service.register, user)
+    return await service.register(user)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -55,7 +53,7 @@ async def get_user(user_data: PathUserDep):
 
 @router.get("/", response_model=list[UserResponse], dependencies=[Depends(get_caller)])
 async def get_users(pagination: PaginationDep, service: UserServiceDep):
-    return service.list_users(pagination.offset, pagination.limit)
+    return await service.list_users(pagination.offset, pagination.limit)
 
 
 @router.put(
@@ -71,11 +69,7 @@ async def password_update(
     user_data: PathUserDep,
     service: UserServiceDep,
 ):
-    return await asyncio.to_thread(
-        service.change_password,
-        user_data["username"],
-        password_data,
-    )
+    await service.change_password(user_data["username"], password_data)
 
 
 @router.patch(
@@ -89,7 +83,7 @@ async def password_update(
 async def user_update(
     payload: UserUpdate, user_data: PathUserDep, service: UserServiceDep
 ):
-    return service.update_user(user_data["username"], payload)
+    return await service.update_user(user_data["username"], payload)
 
 
 @router.delete(
@@ -101,4 +95,4 @@ async def user_update(
     ],
 )
 async def user_delete(user_data: PathUserDep, service: UserServiceDep):
-    service.delete_user(user_data["username"])
+    await service.delete_user(user_data["username"])
