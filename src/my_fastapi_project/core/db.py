@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
 from my_fastapi_project.core.config import get_settings
 
@@ -17,3 +18,7 @@ SessionFactory = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
 )
+
+
+class Base(DeclarativeBase):
+    pass
