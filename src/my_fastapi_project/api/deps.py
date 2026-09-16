@@ -47,8 +47,8 @@ UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 # ---------- BOOK ----------
 
 
-def get_book_repo() -> BookRepository:
-    return BookRepository()
+def get_book_repo(session: SessionDep) -> BookRepository:
+    return BookRepository(session)
 
 
 def get_book_service(
@@ -61,7 +61,7 @@ BookServiceDep = Annotated[BookService, Depends(get_book_service)]
 
 
 async def get_current_book(isbn: str, service: BookServiceDep) -> dict:
-    book = service.get_book(isbn)
+    book = await service.get_book(isbn)
     if book is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"图书'{isbn}'不存在"

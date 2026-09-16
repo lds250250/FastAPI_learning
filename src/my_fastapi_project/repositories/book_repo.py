@@ -1,30 +1,56 @@
 from typing import Any
 
-_books: dict[str, dict[str, Any]] = {}
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# get(isbn) list_all()  update(isbn, data) delete(isbn) create(isbn, data) exists(isbn)
+from my_fastapi_project.models import Book
+
+
+def _to_dict(book: Book) -> dict[str, Any]:
+    return {
+        "isbn": book.isbn,
+        "title": book.title,
+        "author": book.author,
+        "price": book.price,
+        "stock": book.stock,
+        "internal_note": book.internal_note,
+    }
 
 
 class BookRepository:
-    def create(self, isbn: str, data: dict) -> dict[str, Any]:
-        _books[isbn] = data
-        return data
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-    def exists(self, isbn: str) -> bool:
-        return isbn in _books
+    async def create(self, isbn: str, data: dict[str, Any]) -> dict[str, Any]:
+        book = Book(**data)
+        self.session.add(book)
+        await self.session.commit()
+        return _to_dict(book)
 
-    def get(self, isbn: str) -> dict[str, Any] | None:
-        return _books.get(isbn)
+    async def exists(self, isbn: str) -> bool:
+        return await self.session.get(Book, isbn) is not None
 
-    def list_all(self) -> list[dict[str, Any]]:
-        return list(_books.values())
+    async def get(self, isbn: str) -> dict[str, Any] | None:
+        book = await self.session.get(Book, isbn)
+        return _to_dict(book) if book else None
 
-    def update(self, isbn: str, data: dict) -> dict[str, Any] | None:
-        book = _books.get(isbn)
+    async def list_all(self) -> list[dict[str, Any]]:
+        result = await self.session.execute(select(Book).order_by(Book.isbn))
+        return [_to_dict(book) for book in result.scalars()]
+
+    async def update(self, isbn: str, data: dict[str, Any]) -> dict[str, Any] | None:
+        book = await self.session.get(Book, isbn)
         if book is None:
             return None
-        book.update(data)
-        return book
+        for key, value in data.items():
+            setattr(book, key, value)
+        await self.session.commit()
+        return _to_dict(book)
 
-    def delete(self, isbn: str) -> bool:
-        return _books.pop(isbn, None) is not None
+    async def delete(self, isbn: str) -> bool:
+        book = await self.session.get(Book, isbn)
+        if book is None:
+            return False
+        await self.session.delete(book)
+        await self.session.commit()
+        return True

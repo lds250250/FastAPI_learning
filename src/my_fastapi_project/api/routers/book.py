@@ -30,12 +30,12 @@ router = APIRouter(
     ],
 )
 async def register_book(book: BookCreate, service: BookServiceDep):
-    return service.create(book)
+    return await service.create(book)
 
 
 @router.get("/", response_model=list[BookResponse])
 async def get_books(pagination: PaginationDep, service: BookServiceDep):
-    return service.list_book(pagination.offset, pagination.limit)
+    return await service.list_book(pagination.offset, pagination.limit)
 
 
 @router.get("/{isbn}", response_model=BookResponse)
@@ -53,7 +53,7 @@ async def get_book(book_data: CurrentBookDep):
 async def book_update(
     payload: BookUpdate, service: BookServiceDep, book_data: CurrentBookDep
 ):
-    return service.update_book(book_data["isbn"], payload)
+    return await service.update_book(book_data["isbn"], payload)
 
 
 @router.delete(
@@ -62,9 +62,9 @@ async def book_update(
     dependencies=[Depends(require_role(ROLE_ADMIN))],
 )
 async def book_delete(service: BookServiceDep, book_data: CurrentBookDep):
-    service.delete_book(book_data["isbn"])
+    await service.delete_book(book_data["isbn"])
 
 
 @router.post("/{isbn}/borrow", response_model=BookResponse)
 async def book_borrow(service: BookServiceDep, book_data: CurrentBookDep):
-    return service.borrow(book_data["isbn"])
+    return await service.borrow(book_data["isbn"])
