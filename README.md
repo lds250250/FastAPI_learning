@@ -79,7 +79,7 @@
 - **Day 4**：并发编排（`asyncio.gather` 与任务）。
 - **Day 5**：第九周综合实战 —— 对比串行 / 并发 / 假异步三种写法的耗时。
 
-## 第四阶段：测试、认证与异步数据库（第 10 周）
+## 第四阶段：测试、认证与异步数据库（第 10 周）（已完成）
 - **Day 1**：异步数据库引擎与连接配置（`create_async_engine`、`DATABASE_URL`）。
 - **Day 2**：连接与会话管理（`async_sessionmaker` 与第 5 周学的 `yield` 依赖）。
 - **Day 3**：SQLAlchemy 2.0 ORM 模型（`DeclarativeBase`、`Mapped`、`mapped_column`）。
