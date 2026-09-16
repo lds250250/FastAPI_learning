@@ -71,6 +71,17 @@ async def show() -> None:
             .all()
         )
         print(f"  表: {list(tables)}")
+        records = (
+            await session.execute(
+                text(
+                    "SELECT username, isbn, returned_at FROM borrow_records ORDER BY id"
+                )
+            )
+        ).all()
+        print(f"  borrow_records: {len(records)} 行")
+        for row in records:
+            state = "已归还" if row.returned_at else "未归还"
+            print(f"    {row.username} 借了 {row.isbn}（{state}）")
 
 
 async def main() -> None:

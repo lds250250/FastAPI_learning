@@ -52,3 +52,12 @@ async def test_delete(empty_book_repo: BookRepository):
     await empty_book_repo.create("12345", make_book_data())
     assert await empty_book_repo.delete("12345") is True
     assert await empty_book_repo.delete("12345") is False
+
+
+@pytest.mark.anyio
+async def test_decrement_stock_stops_at_zero(empty_book_repo: BookRepository):
+    await empty_book_repo.create("12345", make_book_data(stock=1))
+
+    assert await empty_book_repo.decrement_stock("12345") is True
+    assert await empty_book_repo.decrement_stock("12345") is False
+    assert (await empty_book_repo.get("12345"))["stock"] == 0
