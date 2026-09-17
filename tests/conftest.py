@@ -4,6 +4,7 @@ from pathlib import Path
 import fakeredis.aioredis
 import pytest
 from fastapi.testclient import TestClient
+from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -137,3 +138,22 @@ def fake_redis():
     app.dependency_overrides[get_redis] = lambda: client
     yield client
     app.dependency_overrides.pop(get_redis, None)
+
+
+class DeadRedis:
+    async def get(self, *args, **kwargs):
+        raise RedisConnectionError("模拟 Redis 不可用")
+
+    async def set(self, *args, **kwargs):
+        raise RedisConnectionError("模拟 Redis 不可用")
+
+    async def delete(self, *args, **kwargs):
+        raise RedisConnectionError("模拟 Redis 不可用")
+
+    async def incr(self, *args, **kwargs):
+        raise RedisConnectionError("模拟 Redis 不可用")
+
+
+@pytest.fixture
+def dead_redis(fake_redis):
+    app.dependency_overrides[get_redis] = lambda: DeadRedis()

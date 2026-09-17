@@ -8,6 +8,7 @@ from my_fastapi_project.core.exceptions import (
     NotBorrowed,
     OutOfStock,
 )
+from my_fastapi_project.core.redis import RedisUnavailable
 from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.borrow_repo import BorrowRecordRepository
 from my_fastapi_project.schemas.book import BookCreate, BookUpdate
@@ -41,7 +42,7 @@ class BookService:
     async def get_book(self, isbn: str) -> dict[str, Any] | None:
         key = self._cache_key(isbn)
 
-        cached = await self.cache.get(key)
+        cached = await self._cache_get(key)
         if cached is not None:
             if cached == CACHE_MISS:
                 return None
@@ -50,10 +51,10 @@ class BookService:
         book = await self.repo.get(isbn)
 
         if book is None:
-            await self.cache.set(key, CACHE_MISS, ex=5)
+            await self._cache_set(key, CACHE_MISS, ex=5)
             return None
 
-        await self.cache.set(key, json.dumps(book), ex=CACHE_TTL)
+        await self._cache_set(key, json.dumps(book), ex=CACHE_TTL)
         return book
 
     async def update_book(self, isbn: str, data: BookUpdate) -> dict[str, Any] | None:
@@ -87,5 +88,20 @@ class BookService:
     def _cache_key(isbn: str) -> str:
         return f"book:{isbn}"
 
+    async def _cache_get(self, key: str) -> str | None:
+        try:
+            return await self.cache.get(key)
+        except RedisUnavailable:
+            return None
+
+    async def _cache_set(self, key: str, value: str, ex: int) -> None:
+        try:
+            await self.cache.set(key, value, ex=ex)
+        except RedisUnavailable:
+            return
+
     async def _invalidate(self, isbn: str) -> None:
-        await self.cache.delete(self._cache_key(isbn))
+        try:
+            await self.cache.delete(self._cache_key(isbn))
+        except RedisUnavailable:
+            return

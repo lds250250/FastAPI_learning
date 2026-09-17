@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from my_fastapi_project.core.db import SessionFactory
 from my_fastapi_project.core.exceptions import InvalidCredentials
-from my_fastapi_project.core.redis import redis_client
+from my_fastapi_project.core.redis import RedisUnavailable, redis_client
 from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 from my_fastapi_project.repositories.book_repo import BookRepository
@@ -149,9 +149,11 @@ def rate_limiter(scope: str, times: int, window: int):
         client = request.client.host if request.client else "unknown"
         key = f"rate:{scope}:{client}"
 
-        await cache.set(key, 0, ex=window, nx=True)
-
-        count = await cache.incr(key)
+        try:
+            await cache.set(key, 0, ex=window, nx=True)
+            count = await cache.incr(key)
+        except RedisUnavailable:
+            return
 
         if count > times:
             raise HTTPException(
