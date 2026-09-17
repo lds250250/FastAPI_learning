@@ -64,3 +64,19 @@ def test_return_without_borrowing_returns_400(auth_client, sample_book):
 
     assert response.status_code == 400
     assert response.json()["code"] == 400
+
+
+def test_borrowed_book_stock_is_not_stale(auth_client, sample_book):
+    assert auth_client.get(f"/books/{sample_book}").json()["stock"] == 5
+
+    auth_client.post(f"/books/{sample_book}/borrow")
+
+    assert auth_client.get(f"/books/{sample_book}").json()["stock"] == 4
+
+
+def test_updated_book_title_is_not_stale(admin_client, sample_book):
+    assert admin_client.get(f"/books/{sample_book}").json()["title"] == "流畅的Python"
+
+    admin_client.patch(f"/books/{sample_book}", json={"title": "新的书名"})
+
+    assert admin_client.get(f"/books/{sample_book}").json()["title"] == "新的书名"

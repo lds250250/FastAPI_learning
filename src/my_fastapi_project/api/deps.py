@@ -5,10 +5,12 @@ from typing import Annotated
 import jwt
 from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from my_fastapi_project.core.db import SessionFactory
 from my_fastapi_project.core.exceptions import InvalidCredentials
+from my_fastapi_project.core.redis import redis_client
 from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 from my_fastapi_project.repositories.book_repo import BookRepository
@@ -29,6 +31,14 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+
+# ---------- 缓存 ----------
+def get_redis() -> Redis:
+    return redis_client
+
+
+RedisDep = Annotated[Redis, Depends(get_redis)]
 
 # ---------- USER ----------
 
@@ -60,8 +70,9 @@ def get_borrow_repo(session: SessionDep) -> BorrowRecordRepository:
 def get_book_service(
     repo: Annotated[BookRepository, Depends(get_book_repo)],
     record_repo: Annotated[BorrowRecordRepository, Depends(get_borrow_repo)],
+    cache: RedisDep,
 ) -> BookService:
-    return BookService(repo, record_repo)
+    return BookService(repo, record_repo, cache)
 
 
 BookServiceDep = Annotated[BookService, Depends(get_book_service)]

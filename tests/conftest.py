@@ -1,12 +1,13 @@
 import asyncio
 from pathlib import Path
 
+import fakeredis.aioredis
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from my_fastapi_project.api.deps import _hits, get_session
+from my_fastapi_project.api.deps import _hits, get_redis, get_session
 from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
 from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
 from my_fastapi_project.core.security import create_access_token, hash_password
@@ -133,6 +134,13 @@ def use_test_db(db_factory):
 
 @pytest.fixture
 def alice(db_factory) -> str:
-    """播种一个普通用户 alice，返回用户名。需要满足外键约束的测试用它。"""
     seed_user(db_factory, "alice", ROLE_USER)
     return "alice"
+
+
+@pytest.fixture(autouse=True)
+def fake_redis():
+    client = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    app.dependency_overrides[get_redis] = lambda: client
+    yield client
+    app.dependency_overrides.pop(get_redis, None)

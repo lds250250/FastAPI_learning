@@ -8,11 +8,12 @@ from my_fastapi_project.services.book_service import BookService
 
 
 @pytest.fixture
-async def service(db_factory):
+async def service(db_factory, fake_redis):
     async with db_factory() as session:
         yield BookService(
             BookRepository(session),
             BorrowRecordRepository(session),
+            fake_redis,
         )
 
 
