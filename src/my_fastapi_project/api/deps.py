@@ -143,34 +143,39 @@ PathUserDep = Annotated[dict, Depends(get_path_user)]
 # ---------- 限流 ----------
 
 
-def rate_limiter(scope: str, times: int, window: int):
+async def _check_limit(cache: Redis, key: str, times: int, window: int) -> None:
+    try:
+        await cache.set(key, 0, ex=window, nx=True)
+        count = await cache.incr(key)
+    except RedisUnavailable:
+        return
 
+    if count > times:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
+
+
+def rate_limiter(scope: str, times: int, window: int):
     async def limiter(request: Request, cache: RedisDep) -> None:
         client = request.client.host if request.client else "unknown"
-        key = f"rate:{scope}:{client}"
+        await _check_limit(cache, f"rate:{scope}:ip:{client}", times, window)
 
-        try:
-            await cache.set(key, 0, ex=window, nx=True)
-            count = await cache.incr(key)
-        except RedisUnavailable:
-            return
+    return limiter
 
-        if count > times:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="请求过于频繁，请稍后再试",
-            )
+
+def user_rate_limiter(scope: str, times: int, window: int):
+    async def limiter(caller: CallerDep, cache: RedisDep) -> None:
+        await _check_limit(
+            cache, f"rate:{scope}:user:{caller['username']}", times, window
+        )
 
     return limiter
 
 
 login_rate_limit = rate_limiter("auth:token", 5, 60)
-
-
-books_rate_limit = rate_limiter("books", 5, 60)
-users_rate_limit = rate_limiter("users", 10, 60)
 register_rate_limit = rate_limiter("users:register", 3, 60)
-
 
 # ---------- token ----------
 
@@ -192,6 +197,8 @@ async def get_caller(
 
 
 CallerDep = Annotated[dict, Depends(get_caller)]
+books_rate_limit = user_rate_limiter("books", 5, 60)
+users_rate_limit = user_rate_limiter("users", 10, 60)
 
 
 async def require_self_or_admin(caller: CallerDep, username: str):
