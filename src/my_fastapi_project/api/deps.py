@@ -1,4 +1,5 @@
 import time
+import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -144,29 +145,24 @@ PathUserDep = Annotated[dict, Depends(get_path_user)]
 # ---------- 限流 ----------
 
 
-_hits: dict[str, list[float]] = {}
-
-
 def rate_limiter(scope: str, times: int, window: int):
 
-    async def limiter(request: Request) -> None:
+    async def limiter(request: Request, cache: RedisDep) -> None:
         client = request.client.host if request.client else "unknown"
-        now = time.monotonic()
+        key = f"rate:{scope}:{client}"
+        now = time.time()
 
-        key = f"{scope}:{client}"
-        timestamps = _hits.setdefault(key, [])
+        await cache.zremrangebyscore(key, 0, now - window)
 
-        cutoff = now - window
-        while timestamps and timestamps[0] < cutoff:
-            timestamps.pop(0)
-
-        if len(timestamps) >= times:
+        if await cache.zcard(key) >= times:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="请求过于频繁，请稍后再试",
             )
 
-        timestamps.append(now)
+        await cache.zadd(key, {uuid.uuid4().hex: now})
+
+        await cache.expire(key, window)
 
     return limiter
 

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from my_fastapi_project.api.deps import _hits, get_redis, get_session
+from my_fastapi_project.api.deps import get_redis, get_session
 from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
 from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
 from my_fastapi_project.core.security import create_access_token, hash_password
@@ -39,13 +39,6 @@ def db_factory(tmp_path: Path):
     yield async_sessionmaker(engine, expire_on_commit=False)
 
     _run(engine.dispose())
-
-
-@pytest.fixture(autouse=True)
-def clean_rate_limit():
-    _hits.clear()
-    yield
-    _hits.clear()
 
 
 def seed_user(factory, username: str, role: str) -> None:
