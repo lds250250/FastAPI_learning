@@ -1,5 +1,3 @@
-import time
-import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -150,19 +148,16 @@ def rate_limiter(scope: str, times: int, window: int):
     async def limiter(request: Request, cache: RedisDep) -> None:
         client = request.client.host if request.client else "unknown"
         key = f"rate:{scope}:{client}"
-        now = time.time()
 
-        await cache.zremrangebyscore(key, 0, now - window)
+        await cache.set(key, 0, ex=window, nx=True)
 
-        if await cache.zcard(key) >= times:
+        count = await cache.incr(key)
+
+        if count > times:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="请求过于频繁，请稍后再试",
             )
-
-        await cache.zadd(key, {uuid.uuid4().hex: now})
-
-        await cache.expire(key, window)
 
     return limiter
 
