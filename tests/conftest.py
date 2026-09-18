@@ -8,7 +8,8 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from my_fastapi_project.api.deps import get_redis, get_session
+from my_fastapi_project.api.deps import get_manager, get_redis, get_session
+from my_fastapi_project.api.ws_manager import ConnectionManager
 from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
 from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
 from my_fastapi_project.core.security import create_access_token, hash_password
@@ -163,3 +164,11 @@ class DeadRedis:
 @pytest.fixture
 def dead_redis(fake_redis):
     app.dependency_overrides[get_redis] = lambda: DeadRedis()
+
+
+@pytest.fixture
+def ws_manager():
+    fresh = ConnectionManager()
+    app.dependency_overrides[get_manager] = lambda: fresh
+    yield fresh
+    app.dependency_overrides.pop(get_manager, None)

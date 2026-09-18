@@ -33,3 +33,29 @@ def test_one_connection_can_send_multiple_messages(client, ws_token):
         for word in ["一", "二", "三"]:
             ws.send_text(word)
             assert ws.receive_text() == f"你说了：{word}"
+
+
+def test_connected_user_is_registered_and_removed(client, ws_token, ws_manager):
+    with client.websocket_connect(f"/ws?token={ws_token}"):
+        assert ws_manager.is_online("wsuser")
+        assert ws_manager.connection_count("wsuser") == 1
+
+    assert not ws_manager.is_online("wsuser")
+
+
+def test_same_user_can_connect_from_multiple_tabs(client, ws_token, ws_manager):
+    with client.websocket_connect(f"/ws?token={ws_token}"):
+        with client.websocket_connect(f"/ws?token={ws_token}"):
+            assert ws_manager.connection_count("wsuser") == 2
+
+        assert ws_manager.connection_count("wsuser") == 1
+
+    assert ws_manager.online_users() == []
+
+
+def test_rejected_connection_is_not_registered(client, ws_manager):
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect("/ws?token=not-a-jwt"):
+            pass
+
+    assert ws_manager.online_users() == []

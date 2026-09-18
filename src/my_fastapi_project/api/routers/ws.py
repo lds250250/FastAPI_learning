@@ -3,7 +3,7 @@ from typing import Annotated
 import jwt
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from my_fastapi_project.api.deps import UserServiceDep
+from my_fastapi_project.api.deps import ManagerDep, UserServiceDep
 from my_fastapi_project.core.security import decode_access_token
 
 router = APIRouter(tags=["ws"])
@@ -28,6 +28,7 @@ async def _authenticate(token: str | None, service) -> dict | None:
 async def websocket_endpoint(
     websocket: WebSocket,
     service: UserServiceDep,
+    manager: ManagerDep,
     token: Annotated[str | None, Query()] = None,
 ):
     caller = await _authenticate(token, service)
@@ -36,12 +37,15 @@ async def websocket_endpoint(
         await websocket.close(code=WS_UNAUTHORIZED)
         return
 
-    await websocket.accept()
-    await websocket.send_text(f"欢迎，{caller['username']}")
+    username = caller["username"]
+    await manager.connect(username, websocket)
 
     try:
+        await websocket.send_text(f"欢迎，{username}")
         while True:
             text = await websocket.receive_text()
             await websocket.send_text(f"你说了：{text}")
     except WebSocketDisconnect:
         pass
+    finally:
+        manager.disconnect(username, websocket)

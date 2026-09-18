@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from my_fastapi_project.api.ws_manager import ConnectionManager, manager
 from my_fastapi_project.core.db import SessionFactory
 from my_fastapi_project.core.exceptions import InvalidCredentials
 from my_fastapi_project.core.redis import RedisUnavailable, redis_client
@@ -229,3 +230,12 @@ def get_borrow_service(
 
 
 BorrowServiceDep = Annotated[BorrowService, Depends(get_borrow_service)]
+
+# ---------- WebSocket 连接名单 ----------
+
+
+def get_manager() -> ConnectionManager:
+    return manager
+
+
+ManagerDep = Annotated[ConnectionManager, Depends(get_manager)]
