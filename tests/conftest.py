@@ -172,3 +172,9 @@ def ws_manager():
     app.dependency_overrides[get_manager] = lambda: fresh
     yield fresh
     app.dependency_overrides.pop(get_manager, None)
+
+
+@pytest.fixture
+def bob_token(db_factory) -> str:
+    seed_user(db_factory, "bob", ROLE_USER)
+    return create_access_token("bob")

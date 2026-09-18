@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
@@ -18,12 +20,12 @@ def test_connection_is_rejected_with_invalid_token(client):
             pass
 
 
-def test_valid_token_is_accepted_and_echo_works(client, ws_token):
+def test_message_is_broadcast_to_sender(client, ws_token):
     with client.websocket_connect(f"/ws?token={ws_token}") as ws:
         assert ws.receive_text() == "欢迎，wsuser"
 
         ws.send_text("你好")
-        assert ws.receive_text() == "你说了：你好"
+        assert ws.receive_text() == "wsuser 说：你好"
 
 
 def test_one_connection_can_send_multiple_messages(client, ws_token):
@@ -32,30 +34,51 @@ def test_one_connection_can_send_multiple_messages(client, ws_token):
 
         for word in ["一", "二", "三"]:
             ws.send_text(word)
-            assert ws.receive_text() == f"你说了：{word}"
+            assert ws.receive_text() == f"wsuser 说：{word}"
 
 
-def test_connected_user_is_registered_and_removed(client, ws_token, ws_manager):
-    with client.websocket_connect(f"/ws?token={ws_token}"):
-        assert ws_manager.is_online("wsuser")
-        assert ws_manager.connection_count("wsuser") == 1
+def test_message_is_broadcast_to_other_connections(client, ws_token):
+    with client.websocket_connect(f"/ws?token={ws_token}") as first:
+        first.receive_text()
 
-    assert not ws_manager.is_online("wsuser")
+        with client.websocket_connect(f"/ws?token={ws_token}") as second:
+            second.receive_text()
 
+            first.send_text("大家好")
 
-def test_same_user_can_connect_from_multiple_tabs(client, ws_token, ws_manager):
-    with client.websocket_connect(f"/ws?token={ws_token}"):
-        with client.websocket_connect(f"/ws?token={ws_token}"):
-            assert ws_manager.connection_count("wsuser") == 2
-
-        assert ws_manager.connection_count("wsuser") == 1
-
-    assert ws_manager.online_users() == []
+            assert first.receive_text() == "wsuser 说：大家好"
+            assert second.receive_text() == "wsuser 说：大家好"
 
 
-def test_rejected_connection_is_not_registered(client, ws_manager):
-    with pytest.raises(WebSocketDisconnect):
-        with client.websocket_connect("/ws?token=not-a-jwt"):
-            pass
+def test_direct_message_only_reaches_the_target(client, ws_token, bob_token):
+    with client.websocket_connect(f"/ws?token={ws_token}") as alice:
+        alice.receive_text()
 
-    assert ws_manager.online_users() == []
+        with client.websocket_connect(f"/ws?token={bob_token}") as bob:
+            bob.receive_text()
+
+            alice.send_text("/msg bob 悄悄话")
+
+            assert bob.receive_text() == "wsuser 悄悄说：悄悄话"
+            assert alice.receive_text() == "已发给 bob"
+
+
+def test_broadcast_drops_the_dead_connection(client, ws_token, ws_manager):
+    asyncio.run(ws_manager.connect("ghost", _DeadSocket()))
+
+    with client.websocket_connect(f"/ws?token={ws_token}") as ws:
+        ws.receive_text()
+
+        ws.send_text("还在吗")
+
+        assert ws.receive_text() == "wsuser 说：还在吗"
+
+    assert not ws_manager.is_online("ghost")
+
+
+class _DeadSocket:
+    async def accept(self) -> None:
+        pass
+
+    async def send_text(self, message: str) -> None:
+        raise RuntimeError("这条连接已经死了")

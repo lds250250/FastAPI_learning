@@ -42,9 +42,23 @@ async def websocket_endpoint(
 
     try:
         await websocket.send_text(f"欢迎，{username}")
+
         while True:
             text = await websocket.receive_text()
-            await websocket.send_text(f"你说了：{text}")
+
+            if text.startswith("/msg "):
+                parts = text.split(" ", 2)
+
+                if len(parts) != 3:
+                    await websocket.send_text("用法：/msg 用户名 内容")
+                    continue
+
+                _, target, content = parts
+                await manager.send_to_user(target, f"{username} 悄悄说：{content}")
+                await websocket.send_text(f"已发给 {target}")
+                continue
+
+            await manager.broadcast(f"{username} 说：{text}")
     except WebSocketDisconnect:
         pass
     finally:
