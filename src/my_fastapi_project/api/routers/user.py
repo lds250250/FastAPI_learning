@@ -23,9 +23,6 @@ from my_fastapi_project.schemas.user import (
 router = APIRouter(
     prefix="/users",
     tags=["users"],
-    dependencies=[
-        Depends(users_rate_limit),
-    ],
 )
 
 
@@ -39,19 +36,35 @@ async def register_user(user: UserCreate, service: UserServiceDep):
     return await service.register(user)
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    dependencies=[Depends(users_rate_limit)],
+)
 async def get_me(caller: CallerDep):
     return caller
 
 
 @router.get(
-    "/{username}", response_model=UserResponse, dependencies=[Depends(get_caller)]
+    "/{username}",
+    response_model=UserResponse,
+    dependencies=[
+        Depends(users_rate_limit),
+        Depends(get_caller),
+    ],
 )
 async def get_user(user_data: PathUserDep):
     return user_data
 
 
-@router.get("/", response_model=list[UserResponse], dependencies=[Depends(get_caller)])
+@router.get(
+    "/",
+    response_model=list[UserResponse],
+    dependencies=[
+        Depends(users_rate_limit),
+        Depends(get_caller),
+    ],
+)
 async def get_users(pagination: PaginationDep, service: UserServiceDep):
     return await service.list_users(pagination.offset, pagination.limit)
 
@@ -60,6 +73,7 @@ async def get_users(pagination: PaginationDep, service: UserServiceDep):
     "/{username}/password",
     status_code=204,
     dependencies=[
+        Depends(users_rate_limit),
         Depends(get_caller),
         Depends(require_self_or_admin),
     ],
@@ -76,6 +90,7 @@ async def password_update(
     "/{username}",
     response_model=UserResponse,
     dependencies=[
+        Depends(users_rate_limit),
         Depends(get_caller),
         Depends(require_self_or_admin),
     ],
@@ -90,6 +105,7 @@ async def user_update(
     "/{username}",
     status_code=204,
     dependencies=[
+        Depends(users_rate_limit),
         Depends(require_role(ROLE_ADMIN)),
         Depends(require_not_self),
     ],
