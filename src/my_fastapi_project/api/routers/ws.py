@@ -3,7 +3,8 @@ from typing import Annotated
 import jwt
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from my_fastapi_project.api.deps import ManagerDep, UserServiceDep
+from my_fastapi_project.api import ws_bus
+from my_fastapi_project.api.deps import ManagerDep, RedisDep, UserServiceDep
 from my_fastapi_project.core.security import decode_access_token
 
 router = APIRouter(tags=["ws"])
@@ -29,6 +30,7 @@ async def websocket_endpoint(
     websocket: WebSocket,
     service: UserServiceDep,
     manager: ManagerDep,
+    cache: RedisDep,
     token: Annotated[str | None, Query()] = None,
 ):
     caller = await _authenticate(token, service)
@@ -58,7 +60,8 @@ async def websocket_endpoint(
                 await websocket.send_text(f"已发给 {target}")
                 continue
 
-            await manager.broadcast(f"{username} 说：{text}")
+            await ws_bus.publish(cache, f"{username} 说：{text}")
+
     except WebSocketDisconnect:
         pass
     finally:

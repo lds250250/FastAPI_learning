@@ -13,7 +13,7 @@ class ConnectionManager:
         for websocket in list(self._connections.get(username, [])):
             await self._safe_send(username, websocket, message)
 
-    async def broadcast(self, message: str) -> None:
+    async def broadcast_local(self, message: str) -> None:
         for username, sockets in list(self._connections.items()):
             for websocket in list(sockets):
                 await self._safe_send(username, websocket, message)

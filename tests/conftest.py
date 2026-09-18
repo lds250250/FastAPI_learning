@@ -8,6 +8,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from my_fastapi_project.api import ws_bus
 from my_fastapi_project.api.deps import get_manager, get_redis, get_session
 from my_fastapi_project.api.ws_manager import ConnectionManager
 from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
@@ -178,3 +179,16 @@ def ws_manager():
 def bob_token(db_factory) -> str:
     seed_user(db_factory, "bob", ROLE_USER)
     return create_access_token("bob")
+
+
+@pytest.fixture(autouse=True)
+def local_ws_bus(monkeypatch, ws_manager):
+
+    async def local_publish(client, message):
+        await ws_manager.broadcast_local(message)
+
+    async def no_subscribe(client):
+        return
+
+    monkeypatch.setattr(ws_bus, "publish", local_publish)
+    monkeypatch.setattr(ws_bus, "subscribe_loop", no_subscribe)

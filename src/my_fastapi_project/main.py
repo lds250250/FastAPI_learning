@@ -1,9 +1,12 @@
+import asyncio
 import time
 import uuid
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from my_fastapi_project.api import ws_bus
 from my_fastapi_project.api.routers.auth import router as auth_router
 from my_fastapi_project.api.routers.book import router as book_router
 from my_fastapi_project.api.routers.borrow import router as borrow_router
@@ -12,10 +15,23 @@ from my_fastapi_project.api.routers.user import router as user_router
 from my_fastapi_project.api.routers.ws import router as ws_router
 from my_fastapi_project.core.config import get_settings
 from my_fastapi_project.core.errors import register_exception_handlers
+from my_fastapi_project.core.redis import redis_client
 
 settings = get_settings()
 
-app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(ws_bus.subscribe_loop(redis_client))
+
+    yield
+
+    task.cancel()
+    with suppress(asyncio.CancelledError):
+        await task
+
+
+app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
 
 app.include_router(auth_router)
 
