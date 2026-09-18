@@ -132,6 +132,12 @@ def alice(db_factory) -> str:
     return "alice"
 
 
+@pytest.fixture
+def ws_token(db_factory) -> str:
+    seed_user(db_factory, "wsuser", ROLE_USER)
+    return create_access_token("wsuser")
+
+
 @pytest.fixture(autouse=True)
 def fake_redis():
     client = fakeredis.aioredis.FakeRedis(decode_responses=True)
