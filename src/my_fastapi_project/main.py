@@ -9,6 +9,7 @@ from my_fastapi_project.api.routers.book import router as book_router
 from my_fastapi_project.api.routers.borrow import router as borrow_router
 from my_fastapi_project.api.routers.health import router as health_router
 from my_fastapi_project.api.routers.user import router as user_router
+from my_fastapi_project.api.routers.ws import router as ws_router
 from my_fastapi_project.core.config import get_settings
 from my_fastapi_project.core.errors import register_exception_handlers
 
@@ -67,3 +68,4 @@ app.include_router(user_router)
 app.include_router(health_router)
 app.include_router(book_router)
 app.include_router(borrow_router)
+app.include_router(ws_router)
