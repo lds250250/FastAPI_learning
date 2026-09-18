@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends
 
+from my_fastapi_project.api import ws_bus
 from my_fastapi_project.api.deps import (
     BookServiceDep,
     CallerDep,
     CurrentBookDep,
     PaginationDep,
+    RedisDep,
     books_rate_limit,
     get_caller,
     require_role,
@@ -68,13 +70,28 @@ async def book_delete(service: BookServiceDep, book_data: CurrentBookDep):
 
 @router.post("/{isbn}/borrow", response_model=BookResponse)
 async def book_borrow(
-    caller: CallerDep, service: BookServiceDep, book_data: CurrentBookDep
+    caller: CallerDep,
+    service: BookServiceDep,
+    book_data: CurrentBookDep,
+    cache: RedisDep,
 ):
-    return await service.borrow(caller["username"], book_data["isbn"])
+
+    book = await service.borrow(caller["username"], book_data["isbn"])
+    await ws_bus.publish(
+        cache,
+        f"{caller['username']}借走了《{book['title']}》，还剩{book['stock']}本",
+    )
+    return book
 
 
 @router.post("/{isbn}/return", response_model=BookResponse)
 async def book_return(
-    caller: CallerDep, service: BookServiceDep, book_data: CurrentBookDep
+    caller: CallerDep,
+    service: BookServiceDep,
+    book_data: CurrentBookDep,
+    cache: RedisDep,
 ):
-    return await service.return_book(caller["username"], book_data["isbn"])
+    book = await service.return_book(caller["username"], book_data["isbn"])
+    await ws_bus.publish(cache, f"{caller['username']} 归还了《{book['title']}》")
+
+    return book

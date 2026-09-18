@@ -82,3 +82,27 @@ class _DeadSocket:
 
     async def send_text(self, message: str) -> None:
         raise RuntimeError("这条连接已经死了")
+
+
+def test_announce_reaches_connected_clients(client, ws_token, admin_token):
+    with client.websocket_connect(f"/ws?token={ws_token}") as ws:
+        ws.receive_text()
+
+        response = client.post(
+            "/ws/announce",
+            params={"message": "系统维护通知"},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+
+        assert response.status_code == 204
+        assert ws.receive_text() == "【公告】系统维护通知"
+
+
+def test_announce_requires_admin(client, ws_token):
+    response = client.post(
+        "/ws/announce",
+        params={"message": "我不是管理员"},
+        headers={"Authorization": f"Bearer {ws_token}"},
+    )
+
+    assert response.status_code == 403

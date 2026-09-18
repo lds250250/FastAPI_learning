@@ -181,6 +181,12 @@ def bob_token(db_factory) -> str:
     return create_access_token("bob")
 
 
+@pytest.fixture
+def admin_token(db_factory) -> str:
+    seed_user(db_factory, "adminuser", ROLE_ADMIN)
+    return create_access_token("adminuser")
+
+
 @pytest.fixture(autouse=True)
 def local_ws_bus(monkeypatch, ws_manager):
 

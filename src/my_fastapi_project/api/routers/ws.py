@@ -1,10 +1,16 @@
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
 from my_fastapi_project.api import ws_bus
-from my_fastapi_project.api.deps import ManagerDep, RedisDep, UserServiceDep
+from my_fastapi_project.api.deps import (
+    ManagerDep,
+    RedisDep,
+    UserServiceDep,
+    require_role,
+)
+from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 
 router = APIRouter(tags=["ws"])
@@ -66,3 +72,12 @@ async def websocket_endpoint(
         pass
     finally:
         manager.disconnect(username, websocket)
+
+
+@router.post(
+    "/ws/announce",
+    status_code=204,
+    dependencies=[Depends(require_role(ROLE_ADMIN))],
+)
+async def annnounce(cache: RedisDep, message: Annotated[str, Query(min_length=1)]):
+    await ws_bus.publish(cache, f"【公告】{message}")
