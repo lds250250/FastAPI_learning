@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 import uuid
 from contextlib import asynccontextmanager, suppress
@@ -18,6 +19,10 @@ from my_fastapi_project.core.errors import register_exception_handlers
 from my_fastapi_project.core.redis import redis_client
 
 settings = get_settings()
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -50,9 +55,13 @@ async def log_requests(request: Request, call_next):
     elapsed = (time.monotonic() - start) * 1000
     response.headers["X-Process-Time-Ms"] = f"{elapsed:.0f}"
     rid = getattr(request.state, "request_id", "-")
-    print(
-        f"[{rid}][{request.method}] {request.url.path} "
-        f"→ {response.status_code}  {elapsed:.0f} ms"
+    logger.info(
+        "[%s] %s %s → %s  %.0f ms",
+        rid,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed,
     )
     return response
 
