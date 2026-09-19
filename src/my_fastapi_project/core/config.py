@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    LOG_TO_FILE: bool = True
+
     DATABASE_URL: str
     SECRET_KEY: str
 

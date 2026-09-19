@@ -20,7 +20,7 @@ def test_connection_is_rejected_with_invalid_token(client):
             pass
 
 
-def test_message_is_broadcast_to_sender(client, ws_token):
+def test_message_is_broadcast_to_sender(client, ws_token, local_ws_publish):
     with client.websocket_connect(f"/ws?token={ws_token}") as ws:
         assert ws.receive_text() == "欢迎，wsuser"
 
@@ -28,7 +28,7 @@ def test_message_is_broadcast_to_sender(client, ws_token):
         assert ws.receive_text() == "wsuser 说：你好"
 
 
-def test_one_connection_can_send_multiple_messages(client, ws_token):
+def test_one_connection_can_send_multiple_messages(client, ws_token, local_ws_publish):
     with client.websocket_connect(f"/ws?token={ws_token}") as ws:
         ws.receive_text()
 
@@ -37,7 +37,7 @@ def test_one_connection_can_send_multiple_messages(client, ws_token):
             assert ws.receive_text() == f"wsuser 说：{word}"
 
 
-def test_message_is_broadcast_to_other_connections(client, ws_token):
+def test_message_is_broadcast_to_other_connections(client, ws_token, local_ws_publish):
     with client.websocket_connect(f"/ws?token={ws_token}") as first:
         first.receive_text()
 
@@ -63,7 +63,9 @@ def test_direct_message_only_reaches_the_target(client, ws_token, bob_token):
             assert alice.receive_text() == "已发给 bob"
 
 
-def test_broadcast_drops_the_dead_connection(client, ws_token, ws_manager):
+def test_broadcast_drops_the_dead_connection(
+    client, ws_token, ws_manager, local_ws_publish
+):
     asyncio.run(ws_manager.connect("ghost", _DeadSocket()))
 
     with client.websocket_connect(f"/ws?token={ws_token}") as ws:
@@ -84,7 +86,9 @@ class _DeadSocket:
         raise RuntimeError("这条连接已经死了")
 
 
-def test_announce_reaches_connected_clients(client, ws_token, admin_token):
+def test_announce_reaches_connected_clients(
+    client, ws_token, admin_token, local_ws_publish
+):
     with client.websocket_connect(f"/ws?token={ws_token}") as ws:
         ws.receive_text()
 
