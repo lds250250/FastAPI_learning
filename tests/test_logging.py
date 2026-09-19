@@ -1,6 +1,9 @@
 import logging
 
+import pytest
+
 from my_fastapi_project.core.logging_config import RedactingFormatter
+from my_fastapi_project.repositories.user_repo import UserRepository
 
 
 def test_request_is_logged(client, caplog):
@@ -49,3 +52,18 @@ def test_websocket_connection_is_logged(client, ws_token, caplog):
 
     assert any("连接建立" in m for m in messages)
     assert any("连接断开" in m for m in messages)
+
+
+def test_unhandled_exception_is_logged(auth_client, caplog, monkeypatch):
+    async def boom(self, *args, **kwargs):
+        raise RuntimeError("模拟意外崩溃")
+
+    monkeypatch.setattr(UserRepository, "list_all", boom)
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(RuntimeError):
+            auth_client.get("/users/")
+
+    messages = [r.getMessage() for r in caplog.records]
+
+    assert any("未处理的异常" in m for m in messages)

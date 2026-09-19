@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -19,6 +20,8 @@ from my_fastapi_project.repositories.user_repo import UserRepository
 from my_fastapi_project.services.book_service import BookService
 from my_fastapi_project.services.borrow_service import BorrowService
 from my_fastapi_project.services.user_service import UserService
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -149,6 +152,7 @@ async def _check_limit(cache: Redis, key: str, times: int, window: int) -> None:
         await cache.set(key, 0, ex=window, nx=True)
         count = await cache.incr(key)
     except RedisUnavailable:
+        logger.warning("Redis 不可用，限流降级（放行 %s）", key)
         return
 
     if count > times:

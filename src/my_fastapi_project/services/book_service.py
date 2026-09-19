@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any
 
 from redis.asyncio import Redis
@@ -12,6 +13,8 @@ from my_fastapi_project.core.redis import RedisUnavailable
 from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.borrow_repo import BorrowRecordRepository
 from my_fastapi_project.schemas.book import BookCreate, BookUpdate
+
+logger = logging.getLogger(__name__)
 
 CACHE_TTL = 60
 CACHE_MISS = "__MISS__"
@@ -92,16 +95,17 @@ class BookService:
         try:
             return await self.cache.get(key)
         except RedisUnavailable:
+            logger.warning("Redis 不可用，缓存降级（读 %s）", key)
             return None
 
     async def _cache_set(self, key: str, value: str, ex: int) -> None:
         try:
             await self.cache.set(key, value, ex=ex)
         except RedisUnavailable:
-            return
+            logger.warning("Redis 不可用，缓存降级（写 %s）", key)
 
     async def _invalidate(self, isbn: str) -> None:
         try:
             await self.cache.delete(self._cache_key(isbn))
         except RedisUnavailable:
-            return
+            logger.warning("Redis 不可用，缓存降级（删 %s）", self._cache_key(isbn))

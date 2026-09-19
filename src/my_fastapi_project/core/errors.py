@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from my_fastapi_project.core.exceptions import BusinessError
+from my_fastapi_project.core.exceptions import BusinessError, InvalidCredentials
+
+logger = logging.getLogger(__name__)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -37,6 +41,8 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
+        logger.exception("未处理的异常：%s %s", request.method, request.url.path)
+
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": "服务器内部错误"},
@@ -44,6 +50,9 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(BusinessError)
     async def business_error_handler(request: Request, exc: BusinessError):
+        if isinstance(exc, InvalidCredentials):
+            logger.info("认证失败：%s %s", request.method, request.url.path)
+
         return JSONResponse(
             status_code=exc.status_code,
             content={"code": exc.status_code, "message": exc.message},

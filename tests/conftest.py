@@ -19,6 +19,9 @@ from my_fastapi_project.models import Book, User
 from my_fastapi_project.repositories.book_repo import BookRepository
 from my_fastapi_project.repositories.user_repo import UserRepository
 
+app.debug = False
+
+
 SEED_PASSWORD = "secret123"
 SEED_PASSWORD_HASH = hash_password(SEED_PASSWORD)
 
