@@ -14,6 +14,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev
 
 
+
 FROM python:3.11-slim
 
 WORKDIR /app
