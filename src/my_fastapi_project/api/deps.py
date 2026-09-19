@@ -9,6 +9,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from my_fastapi_project.api.ws_manager import ConnectionManager, manager
+from my_fastapi_project.core.config import get_settings
 from my_fastapi_project.core.db import SessionFactory
 from my_fastapi_project.core.exceptions import InvalidCredentials
 from my_fastapi_project.core.redis import RedisUnavailable, redis_client
@@ -22,6 +23,7 @@ from my_fastapi_project.services.borrow_service import BorrowService
 from my_fastapi_project.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -179,9 +181,12 @@ def user_rate_limiter(scope: str, times: int, window: int):
     return limiter
 
 
-login_rate_limit = rate_limiter("auth:token", 5, 60)
-register_rate_limit = rate_limiter("users:register", 3, 60)
-
+login_rate_limit = rate_limiter(
+    "auth:token", settings.RATE_LIMIT_LOGIN, settings.RATE_LIMIT_WINDOW
+)
+register_rate_limit = rate_limiter(
+    "users:register", settings.RATE_LIMIT_REGISTER, settings.RATE_LIMIT_WINDOW
+)
 # ---------- token ----------
 
 
@@ -202,8 +207,12 @@ async def get_caller(
 
 
 CallerDep = Annotated[dict, Depends(get_caller)]
-books_rate_limit = user_rate_limiter("books", 5, 60)
-users_rate_limit = user_rate_limiter("users", 10, 60)
+books_rate_limit = user_rate_limiter(
+    "books", settings.RATE_LIMIT_BOOKS, settings.RATE_LIMIT_WINDOW
+)
+users_rate_limit = user_rate_limiter(
+    "users", settings.RATE_LIMIT_USERS, settings.RATE_LIMIT_WINDOW
+)
 
 
 async def require_self_or_admin(caller: CallerDep, username: str):

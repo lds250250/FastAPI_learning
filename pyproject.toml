@@ -31,6 +31,7 @@ default = true
 [dependency-groups]
 dev = [
     "fakeredis>=2.38.0",
+    "locust>=2.46.5",
     "pytest>=9.1.1",
 ]
 

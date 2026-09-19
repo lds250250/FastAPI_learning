@@ -12,6 +12,11 @@ class Settings(BaseSettings):
 
     LOG_TO_FILE: bool = True
 
+    RATE_LIMIT_WINDOW: int = 60
+    RATE_LIMIT_LOGIN: int = 5
+    RATE_LIMIT_BOOKS: int = 5
+    RATE_LIMIT_USERS: int = 10
+    RATE_LIMIT_REGISTER: int = 3
     DATABASE_URL: str
     SECRET_KEY: str
 
