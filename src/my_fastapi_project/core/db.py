@@ -29,7 +29,8 @@ def enable_sqlite_foreign_keys(async_engine: AsyncEngine) -> None:
         cursor.close()
 
 
-enable_sqlite_foreign_keys(engine)
+if settings.DATABASE_URL.startswith("sqlite"):
+    enable_sqlite_foreign_keys(engine)
 
 
 class Base(DeclarativeBase):
