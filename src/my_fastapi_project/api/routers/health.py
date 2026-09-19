@@ -15,3 +15,6 @@ async def health_check():
 async def health_db(session: SessionDep):
     await session.execute(text("SELECT 1"))
     return {"database": "ok"}
+
+
+#
