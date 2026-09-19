@@ -4,7 +4,7 @@ services:
     image: myapp:latest
     restart: unless-stopped
     command: >
-      uvicorn my_fastapi_project.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*" --workers 4
+      uvicorn my_fastapi_project.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*" --workers ${WORKERS:-4}
     env_file:
       - .env
     environment:
