@@ -1,3 +1,5 @@
+import logging
+import uuid
 from typing import Annotated
 
 import jwt
@@ -10,16 +12,17 @@ from my_fastapi_project.api.deps import (
     UserServiceDep,
     require_role,
 )
+from my_fastapi_project.core.logging_config import request_id_var
 from my_fastapi_project.core.roles import ROLE_ADMIN
 from my_fastapi_project.core.security import decode_access_token
 
 router = APIRouter(tags=["ws"])
+logger = logging.getLogger(__name__)
 
 WS_UNAUTHORIZED = 4001
 
 
 async def _authenticate(token: str | None, service) -> dict | None:
-    """从令牌解出调用者。任何一步不成立都返回 None，不抛异常。"""
     if not token:
         return None
 
@@ -46,7 +49,10 @@ async def websocket_endpoint(
         return
 
     username = caller["username"]
+    request_id_var.set(f"ws-{uuid.uuid4().hex[:8]}")
     await manager.connect(username, websocket)
+
+    logger.info("WebSocket 连接建立：%s", username)
 
     try:
         await websocket.send_text(f"欢迎，{username}")
@@ -72,6 +78,7 @@ async def websocket_endpoint(
         pass
     finally:
         manager.disconnect(username, websocket)
+        logger.info("WebSocket 连接断开：%s", username)
 
 
 @router.post(
@@ -79,5 +86,5 @@ async def websocket_endpoint(
     status_code=204,
     dependencies=[Depends(require_role(ROLE_ADMIN))],
 )
-async def annnounce(cache: RedisDep, message: Annotated[str, Query(min_length=1)]):
+async def announce(cache: RedisDep, message: Annotated[str, Query(min_length=1)]):
     await ws_bus.publish(cache, f"【公告】{message}")

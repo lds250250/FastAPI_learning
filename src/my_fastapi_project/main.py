@@ -16,7 +16,7 @@ from my_fastapi_project.api.routers.user import router as user_router
 from my_fastapi_project.api.routers.ws import router as ws_router
 from my_fastapi_project.core.config import get_settings
 from my_fastapi_project.core.errors import register_exception_handlers
-from my_fastapi_project.core.logging_config import setup_logging
+from my_fastapi_project.core.logging_config import request_id_var, setup_logging
 from my_fastapi_project.core.redis import redis_client
 
 settings = get_settings()
@@ -52,14 +52,14 @@ register_exception_handlers(app)
 async def log_requests(request: Request, call_next):
     start = time.monotonic()
 
+    logger.info("→ %s %s", request.method, request.url.path)
+
     response = await call_next(request)
 
     elapsed = (time.monotonic() - start) * 1000
     response.headers["X-Process-Time-Ms"] = f"{elapsed:.0f}"
-    rid = getattr(request.state, "request_id", "-")
     logger.info(
-        "[%s] %s %s → %s  %.0f ms",
-        rid,
+        "← %s %s → %s  %.0f ms",
         request.method,
         request.url.path,
         response.status_code,
@@ -72,6 +72,7 @@ async def log_requests(request: Request, call_next):
 async def add_request_id(request: Request, call_next):
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex
     request.state.request_id = rid
+    request_id_var.set(rid)
 
     response = await call_next(request)
 

@@ -1,14 +1,35 @@
 import logging
 import logging.handlers
 import re
+from contextvars import ContextVar
 from pathlib import Path
 
 LOG_DIR = Path("logs")
 
-LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+LOG_FORMAT = "%(asctime)s [%(levelname)s] [%(request_id)s] %(name)s: %(message)s"
 LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
 
 TOKEN_PATTERN = re.compile(r"(token=)[^&\s]+")
+
+request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
+
+_record_factory_installed = False
+
+
+def _install_record_factory() -> None:
+    global _record_factory_installed
+    if _record_factory_installed:
+        return
+
+    original = logging.getLogRecordFactory()
+
+    def factory(*args, **kwargs):
+        record = original(*args, **kwargs)
+        record.request_id = request_id_var.get()
+        return record
+
+    logging.setLogRecordFactory(factory)
+    _record_factory_installed = True
 
 
 class RedactingFormatter(logging.Formatter):
@@ -17,6 +38,7 @@ class RedactingFormatter(logging.Formatter):
 
 
 def setup_logging(level: int = logging.INFO) -> None:
+    _install_record_factory()
     LOG_DIR.mkdir(exist_ok=True)
 
     formatter = RedactingFormatter(LOG_FORMAT, datefmt=LOG_DATEFMT)
