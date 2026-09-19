@@ -15,6 +15,7 @@ from my_fastapi_project.api.routers.health import router as health_router
 from my_fastapi_project.api.routers.user import router as user_router
 from my_fastapi_project.api.routers.ws import router as ws_router
 from my_fastapi_project.core.config import get_settings
+from my_fastapi_project.core.db import engine
 from my_fastapi_project.core.errors import register_exception_handlers
 from my_fastapi_project.core.logging_config import request_id_var, setup_logging
 from my_fastapi_project.core.redis import redis_client
@@ -30,12 +31,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(ws_bus.subscribe_loop(redis_client))
+    logger.info("应用启动")
 
     yield
+
+    logger.info("应用关闭中")
 
     task.cancel()
     with suppress(asyncio.CancelledError):
         await task
+
+    await redis_client.aclose()
+    await engine.dispose()
+
+    logger.info("应用已关闭")
 
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
