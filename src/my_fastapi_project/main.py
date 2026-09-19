@@ -16,11 +16,13 @@ from my_fastapi_project.api.routers.user import router as user_router
 from my_fastapi_project.api.routers.ws import router as ws_router
 from my_fastapi_project.core.config import get_settings
 from my_fastapi_project.core.errors import register_exception_handlers
+from my_fastapi_project.core.logging_config import setup_logging
 from my_fastapi_project.core.redis import redis_client
 
 settings = get_settings()
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
+
 
 logger = logging.getLogger(__name__)
 
