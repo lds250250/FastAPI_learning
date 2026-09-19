@@ -1,17 +1,20 @@
 import asyncio
 from pathlib import Path
+from uuid import uuid4
 
 import fakeredis.aioredis
 import pytest
 from fastapi.testclient import TestClient
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from my_fastapi_project.api import ws_bus
 from my_fastapi_project.api.deps import get_manager, get_redis, get_session
 from my_fastapi_project.api.ws_manager import ConnectionManager
-from my_fastapi_project.core.db import Base, enable_sqlite_foreign_keys
+from my_fastapi_project.core.config import get_settings
+from my_fastapi_project.core.db import Base
 from my_fastapi_project.core.roles import ROLE_ADMIN, ROLE_USER
 from my_fastapi_project.core.security import create_access_token, hash_password
 from my_fastapi_project.main import app
@@ -36,15 +39,31 @@ def _run(coro):
 
 
 @pytest.fixture
-def db_factory(tmp_path: Path):
-    url = f"sqlite+aiosqlite:///{(tmp_path / 'test.db').as_posix()}"
-    engine = create_async_engine(url, poolclass=NullPool, echo=False)
-    enable_sqlite_foreign_keys(engine)
+def db_factory():
+    schema = f"test_{uuid4().hex[:8]}"
+
+    engine = create_async_engine(
+        get_settings().DATABASE_URL,
+        poolclass=NullPool,
+        connect_args={"server_settings": {"search_path": schema}},
+        echo=False,
+    )
+
+    async def _setup() -> None:
+        async with engine.begin() as conn:
+            await conn.execute(text(f'CREATE SCHEMA "{schema}"'))
+
+    async def _teardown() -> None:
+        async with engine.begin() as conn:
+            await conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        await engine.dispose()
+
+    _run(_setup())
     _run(_create_all(engine))
 
     yield async_sessionmaker(engine, expire_on_commit=False)
 
-    _run(engine.dispose())
+    _run(_teardown())
 
 
 def seed_user(factory, username: str, role: str) -> None:
