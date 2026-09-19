@@ -73,9 +73,13 @@ class BookService:
 
     async def borrow(self, username: str, isbn: str) -> dict[str, Any]:
         if not await self.repo.decrement_stock(isbn):
+            logger.info("借阅失败（库存不足）：%s 想借 %s", username, isbn)
             raise OutOfStock()
         await self.record_repo.create(username, isbn)
         await self._invalidate(isbn)
+
+        logger.info("借阅成功：%s 借走了 %s", username, isbn)
+
         return await self.repo.get(isbn)
 
     async def return_book(self, username: str, isbn: str) -> dict[str, Any]:

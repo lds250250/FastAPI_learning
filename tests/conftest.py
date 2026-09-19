@@ -191,13 +191,17 @@ def admin_token(db_factory) -> str:
 
 
 @pytest.fixture(autouse=True)
-def local_ws_bus(monkeypatch, ws_manager):
+def no_ws_subscribe(monkeypatch):
+    async def noop(client):
+        return
+
+    monkeypatch.setattr(ws_bus, "subscribe_loop", noop)
+
+
+@pytest.fixture
+def local_ws_publish(monkeypatch, ws_manager):
 
     async def local_publish(client, message):
         await ws_manager.broadcast_local(message)
 
-    async def no_subscribe(client):
-        return
-
     monkeypatch.setattr(ws_bus, "publish", local_publish)
-    monkeypatch.setattr(ws_bus, "subscribe_loop", no_subscribe)

@@ -67,3 +67,12 @@ def test_unhandled_exception_is_logged(auth_client, caplog, monkeypatch):
     messages = [r.getMessage() for r in caplog.records]
 
     assert any("未处理的异常" in m for m in messages)
+
+
+def test_borrow_is_logged(auth_client, sample_book, caplog):
+    with caplog.at_level(logging.INFO):
+        auth_client.post(f"/books/{sample_book}/borrow")
+
+    messages = [r.getMessage() for r in caplog.records]
+
+    assert any("借阅成功" in m for m in messages)
