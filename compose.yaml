@@ -3,8 +3,8 @@ services:
     build: .
     image: myapp:latest
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    command: >
+      uvicorn my_fastapi_project.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*" --workers 4
     env_file:
       - .env
     environment:
@@ -45,3 +45,12 @@ services:
 volumes:
   pg-data:
     name: pg-data
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
